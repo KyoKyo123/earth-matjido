@@ -139,6 +139,9 @@ footer{padding:5px 13px;font-size:.64rem;color:#B3AA9B;background:var(--paper);b
 .catcount-row .jumpbtn{border:1.5px solid var(--ct);background:#fff;color:var(--ct);border-radius:8px;
   font:inherit;font-size:.68rem;font-weight:800;padding:5px 9px;cursor:pointer;white-space:nowrap}
 .catcount-row .jumpbtn:active{background:var(--ct);color:#fff}
+.usjumpbtn{width:100%;border:1.5px solid var(--us);background:var(--us-bg);color:#0A6B3A;
+  border-radius:10px;padding:11px;font:inherit;font-size:.85rem;font-weight:800;cursor:pointer}
+.usjumpbtn:active{background:var(--us);color:#fff}
 .stage-label{font-size:.72rem;font-weight:800;color:var(--reg);letter-spacing:.05em;margin-bottom:6px;display:none}
 .stage-label.on{display:block}
 .backstage{border:none;background:none;color:var(--sub);font:inherit;font-size:.76rem;cursor:pointer;text-decoration:underline;margin-bottom:8px;display:none}
@@ -184,6 +187,18 @@ footer{padding:5px 13px;font-size:.64rem;color:#B3AA9B;background:var(--paper);b
   text-align:center;font-size:.66rem;font-weight:700;color:var(--sub);padding:4px;line-height:1.25;transition:background .06s,color .06s,transform .06s}
 .gcell.lit{background:var(--reg);color:#fff;transform:scale(1.08);box-shadow:0 3px 10px rgba(242,92,31,.4)}
 .gcell.center{background:var(--ink);color:#fff;font-size:.72rem;font-weight:800;grid-column:2/4;grid-row:2/4;border-radius:12px}
+.bang-overlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.bang-mark{font-size:9rem;font-family:'Black Han Sans',sans-serif;color:#F25C1F;
+  text-shadow:0 0 30px rgba(242,92,31,.8),0 0 60px rgba(255,242,0,.6),4px 4px 0 #fff,-4px -4px 0 #fff,4px -4px 0 #fff,-4px 4px 0 #fff;
+  animation:bangpop .6s cubic-bezier(.17,.89,.32,1.5) forwards}
+@keyframes bangpop{
+  0%{transform:scale(.2) rotate(-8deg);opacity:0}
+  55%{transform:scale(1.25) rotate(4deg);opacity:1}
+  75%{transform:scale(.92) rotate(-2deg);opacity:1}
+  100%{transform:scale(1) rotate(0deg);opacity:1}
+}
+.bang-fade{animation:bangfade .35s ease forwards}
+@keyframes bangfade{from{opacity:1}to{opacity:0}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -213,7 +228,7 @@ footer{padding:5px 13px;font-size:.64rem;color:#B3AA9B;background:var(--paper);b
   <div class="modal">
     <button class="modal-x" id="rClose">✕</button>
     <h2>🎯 오늘 뭐 먹지</h2>
-    <div class="desc" id="rDesc">먹고싶은 카테고리마다 인원수를 넣어봐 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 원판이 돌아가</div>
+    <div class="desc" id="rDesc">먹고 싶은 카테고리마다 인원수를 넣어주세요 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 원판이 돌아갑니다</div>
     <div class="stage-label" id="stageLabel">STAGE 2 · 카테고리 확정</div>
     <button class="backstage" id="backStage">← 카테고리 다시 정하기</button>
     <div class="modetabs" id="modeTabs">
@@ -222,14 +237,15 @@ footer{padding:5px 13px;font-size:.64rem;color:#B3AA9B;background:var(--paper);b
       <button class="modetab" data-mode="grid">🎯 보드</button>
     </div>
     <div class="roulette-sec" id="catStepSec">
-      <div class="label">카테고리별 인원 (합계 <span id="totalCount">0</span>명)</div>
+      <button class="usjumpbtn" id="usJumpBtn">🟢 US인증 맛집에서만 바로 돌리기</button>
+      <div class="label" style="margin-top:12px">카테고리별 인원 (합계 <span id="totalCount">0</span>명)</div>
       <div class="catcount-list" id="catCountList"></div>
     </div>
     <div class="roulette-sec" id="sizeSecOld" style="display:none">
       <div class="label">인원</div>
       <div class="roulette-opts" id="rSizeOpts"></div>
     </div>
-    <div class="spinzone" id="spinZone"><div class="spin-idle">버튼을 눌러 돌려봐</div></div>
+    <div class="spinzone" id="spinZone"><div class="spin-idle">버튼을 눌러 돌려보세요</div></div>
     <div class="wheelzone" id="wheelZone">
       <div class="wheel-ptr"></div>
       <svg class="wheel-svg" id="wheelSvg" viewBox="0 0 200 200"></svg>
@@ -239,7 +255,7 @@ footer{padding:5px 13px;font-size:.64rem;color:#B3AA9B;background:var(--paper);b
     <div class="gridzone" id="gridZone"></div>
     <button class="spinbtn" id="spinBtn">🎲 돌리기</button>
     <div class="reroll-line" id="rerollLine" style="display:none">
-      마음에 안 들어? <button id="rerollBtn">다시 돌리기</button>
+      마음에 안 드시나요? <button id="rerollBtn">다시 돌리기</button>
     </div>
   </div>
 </div>
@@ -271,9 +287,9 @@ const t12=m=>{const t=12*60-m;return Math.floor(t/60)+":"+String(t%60).padStart(
 function groupWarning(p, size){
   if(!size || size<4 || !p.wait) return "";
   if(size>=7){
-    if(p.wait>=1) return `<div class="groupwarn">👥 <b>단체(7명+)는 웨이팅 위험 높음</b> — 이 곳은 웨이팅${p.wait>=2?' 필수':' 붐빔'} 등급이라 단체 착석까지 오래 걸릴 수 있어. 예약 가능 여부 미리 전화 확인 추천.</div>`;
+    if(p.wait>=1) return `<div class="groupwarn">👥 <b>단체(7명+)는 웨이팅 위험 높음</b> — 이 곳은 웨이팅${p.wait>=2?' 필수':' 붐빔'} 등급이라 단체 착석까지 오래 걸릴 수 있어요. 예약 가능 여부를 미리 전화로 확인해보세요.</div>`;
   }else{ // 4~6명
-    if(p.wait>=2) return `<div class="groupwarn">👥 <b>4인 이상은 대기 더 걸릴 수 있어</b> — 미리 전화로 좌석 확인 추천.</div>`;
+    if(p.wait>=2) return `<div class="groupwarn">👥 <b>4인 이상은 대기 더 걸릴 수 있어요</b> — 미리 전화로 좌석을 확인해보세요.</div>`;
   }
   return "";
 }
@@ -294,7 +310,7 @@ function bootError(msg){
 }
 function initKakao(){
   if(!window.kakao||!kakao.maps){return bootError(
-    '<b>카카오 지도를 불러오지 못했어.</b><br>이 페이지가 <b>등록된 도메인</b>에서 열렸는지 확인해줘.<br>(로컬 파일·미리보기에선 안 뜸 — GitHub Pages 주소로 열어야 함)');}
+    '<b>카카오 지도를 불러오지 못했어요.</b><br>이 페이지가 <b>등록된 도메인</b>에서 열렸는지 확인해주세요.<br>(로컬 파일·미리보기에선 뜨지 않습니다 — GitHub Pages 주소로 열어야 해요)');}
   kakao.maps.load(()=>{ buildMap(); });
 }
 function buildMap(){
@@ -365,21 +381,48 @@ function buildMarkers(){
 /* ── 패널(가게 상세) — 데스크톱=왼쪽 고정, 모바일=바텀시트 ── */
 const panel=document.getElementById('panel');
 const bodyEl=document.getElementById('body');
+function celebrateWinner(){
+  const ov=document.createElement('div'); ov.className='bang-overlay';
+  ov.innerHTML='<div class="bang-mark">❗</div>';
+  document.body.appendChild(ov);
+  setTimeout(()=>{
+    ov.classList.add('bang-fade');
+    setTimeout(()=>ov.remove(),380);
+  },550);
+}
+let glowTimer=null;
+function startRouteGlow(glowLine){
+  if(glowTimer) clearInterval(glowTimer);
+  let up=true, op=0.9;
+  glowTimer=setInterval(()=>{
+    op += up? -0.12 : 0.12;
+    if(op<=0.15){op=0.15;up=false;}
+    if(op>=0.9){op=0.9;up=true;}
+    glowLine.setOptions({strokeOpacity:op});
+  },90);
+}
+function stopRouteGlow(){ if(glowTimer){clearInterval(glowTimer);glowTimer=null;} }
 function openPanel(p){
   curOpen=p;
   bodyEl.classList.add('has-panel');
   if(curLines){curLines.forEach(l=>l.setMap(null));curLines=[];}
+  // 다른 가게 핀은 전부 숨기고 선택된 가게만 지도에 남김(집중 연출)
+  P.forEach(x=>{ if(x!==p) x._ov.setMap(null); });
+  p._ov.setMap(map);
   const lineCol=p.gold?'#1E7BE0':p.us?'#0E8A4C':'#F25C1F';
   const path=p.route
     ? p.route.pts.map(pt=>new kakao.maps.LatLng(pt[0],pt[1]))
     : [new kakao.maps.LatLng(OFFICE.lat,OFFICE.lng),new kakao.maps.LatLng(p.lat,p.lng)];
   if(p.route){
-    const outline=new kakao.maps.Polyline({path,strokeWeight:6,strokeColor:'#fff',strokeOpacity:.9});
-    const inner=new kakao.maps.Polyline({path,strokeWeight:3,strokeColor:lineCol,strokeOpacity:.95});
-    outline.setMap(map); inner.setMap(map);
-    curLines=[outline,inner];
+    // 네온 반짝임: 흰 외곽선 + 컬러 라인 + 그 위에 밝은 하이라이트 라인을 애니메이션으로 깜빡임
+    const outline=new kakao.maps.Polyline({path,strokeWeight:8,strokeColor:'#fff',strokeOpacity:.95});
+    const inner=new kakao.maps.Polyline({path,strokeWeight:4,strokeColor:lineCol,strokeOpacity:1});
+    const glow=new kakao.maps.Polyline({path,strokeWeight:4,strokeColor:'#FFF200',strokeOpacity:.9});
+    outline.setMap(map); inner.setMap(map); glow.setMap(map);
+    curLines=[outline,inner,glow];
+    startRouteGlow(glow);
   }else{
-    const dash=new kakao.maps.Polyline({path,strokeWeight:3,strokeColor:lineCol,strokeOpacity:.8,strokeStyle:'dash'});
+    const dash=new kakao.maps.Polyline({path,strokeWeight:4,strokeColor:lineCol,strokeOpacity:.85,strokeStyle:'dash'});
     dash.setMap(map);
     curLines=[dash];
   }
@@ -446,7 +489,9 @@ function closePanel(){
   panel.classList.remove('expanded');
   bodyEl.classList.remove('has-panel');
   curOpen=null;
+  stopRouteGlow();
   if(curLines){curLines.forEach(l=>l.setMap(null));curLines=[];}
+  applyFilter(); // 숨겼던 핀들 다시 표시 (현재 카테고리·검색 조건 기준으로 복원)
   requestAnimationFrame(()=>{ setTimeout(()=>{ if(map) kakao.maps.event.trigger(map,'resize'); },80); });
 }
 function kakaoRoute(p){
@@ -490,7 +535,7 @@ function buildCatStepper(){
   const total=Object.values(catCounts).reduce((a,b)=>a+b,0);
   document.getElementById('totalCount').textContent=total;
   spinBtn.disabled = total===0;
-  spinBtn.textContent = total===0 ? '카테고리에 인원을 넣어줘' : '🎲 카테고리 룰렛 돌리기';
+  spinBtn.textContent = total===0 ? '카테고리에 인원을 넣어주세요' : '🎲 카테고리 룰렛 돌리기';
 }
 function catRouletteItems(){
   // 카테고리별 인원수만큼 칸을 반복 생성 → 배열 원소 자체가 "가짜 P 객체"(n=카테고리명) 역할
@@ -514,7 +559,7 @@ document.getElementById('modeTabs').addEventListener('click',e=>{
   const b=e.target.closest('.modetab'); if(!b||spinning) return; setMode(b.dataset.mode);
 });
 function resetResultArea(){
-  spinZone.innerHTML='<div class="spin-idle">버튼을 눌러 돌려봐</div>';
+  spinZone.innerHTML='<div class="spin-idle">버튼을 눌러 돌려보세요</div>';
   wheelResult.innerHTML=''; wheelSvg.style.transition='none'; wheelSvg.style.transform='rotate(0deg)';
   gridZone.innerHTML='';
   rerollLine.style.display='none'; spinBtn.textContent='🎲 돌리기'; spinBtn.disabled=false; spinBtnMode='spin';
@@ -523,10 +568,11 @@ function goStage1(){
   stage=1; catCounts={}; stagePool=null; pendingCatWinner=null; window.__finalWinner=null;
   catStepSec.style.display='block';
   stageLabel.classList.remove('on'); backStage.classList.remove('on');
-  rDesc.textContent='먹고싶은 카테고리마다 인원수를 넣어봐 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 원판이 돌아가';
+  rDesc.textContent='먹고 싶은 카테고리마다 인원수를 넣어주세요 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 원판이 돌아갑니다';
   buildCatStepper();
   setMode(rMode);
 }
+document.getElementById('usJumpBtn').onclick=()=>jumpToUS();
 function openDice(){ goStage1(); rBg.classList.add('open'); }
 function closeDice(){ rBg.classList.remove('open'); if(spinTimer){clearInterval(spinTimer);clearTimeout(spinTimer);} spinning=false; }
 backStage.onclick=()=>{ goStage1(); };
@@ -556,13 +602,13 @@ function doSpin(){
     // 스테이지1 진입: UI를 카테고리 입력 → 결과 화면으로 전환
     catStepSec.style.display='none';
     stageLabel.textContent='STAGE 1 · 카테고리 뽑는 중'; stageLabel.classList.add('on');
-    rDesc.textContent='먼저 어떤 종류를 먹을지부터 정해';
+    rDesc.textContent='먼저 어떤 종류를 드실지부터 정해주세요';
   } else { // stage===3 (가게 뽑기)
     pool=stagePool;
     if(!pool.length){
-      if(rMode==='slot') spinZone.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어</div>';
-      else if(rMode==='wheel') wheelResult.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어</div>';
-      else gridZone.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어</div>';
+      if(rMode==='slot') spinZone.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요</div>';
+      else if(rMode==='wheel') wheelResult.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요</div>';
+      else gridZone.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요</div>';
       return;
     }
   }
@@ -574,18 +620,26 @@ function doSpin(){
 // ── 슬롯머신 ──
 function spinSlot(pool){
   spinning=true; spinBtn.disabled=true; rerollLine.style.display='none'; spinBtn.onclick=null;
-  let n=0; const total=18+Math.floor(Math.random()*6);
-  spinTimer=setInterval(()=>{
+  const total=22+Math.floor(Math.random()*6);
+  let n=0;
+  function tick(){
     const p=pool[Math.floor(Math.random()*pool.length)];
     spinZone.innerHTML=`<div class="spin-card"><div class="nm">${p.n}</div><div class="ct">${p.cat}</div></div>`;
     n++;
     if(n>=total){
-      clearInterval(spinTimer); spinning=false; spinBtn.disabled=false;
+      spinning=false; spinBtn.disabled=false;
       const winner=pool[Math.floor(Math.random()*pool.length)];
-      spinZone.innerHTML=`<div class="spin-card"><div class="nm">🎉 ${winner.n}</div><div class="ct">${winner.cat}${winner.r?` · ★${winner.r.toFixed(1)}`:''}</div></div>`;
+      spinZone.innerHTML=`<div class="spin-card"><div class="nm">${winner.n}</div><div class="ct">${winner.cat}${winner.r?` · ★${winner.r.toFixed(1)}`:''}</div></div>`;
+      celebrateWinner();
       finishSpin(winner);
+      return;
     }
-  },80);
+    // 감속곡선: 처음엔 빠르게(60ms) 점점 느려져서 마지막엔 뚝뚝 끊기듯(최대 300ms)
+    const progress=n/total;
+    const delay = 60 + Math.pow(progress,2.4)*260;
+    spinTimer=setTimeout(tick,delay);
+  }
+  tick();
 }
 
 // ── 원판(휠) 룰렛: 빠르게 돌다 서서히 감속 ──
@@ -618,19 +672,27 @@ function spinWheel(pool){
   const winIdx=Math.floor(Math.random()*n);
   const targetMid=winIdx*step+step/2;
   const spins=5+Math.floor(Math.random()*2);
-  const finalAngle = wheelCurAngle + spins*360 + (360-targetMid) - (wheelCurAngle%360);
+  const exactAngle = wheelCurAngle + spins*360 + (360-targetMid) - (wheelCurAngle%360);
+  const overshoot = exactAngle + (6+Math.random()*5); // 목표를 살짝 지나쳐서 덜컹거리는 느낌
   wheelSvg.style.transition='none';
   wheelSvg.style.transform=`rotate(${wheelCurAngle}deg)`;
   void wheelSvg.offsetWidth;
-  wheelSvg.style.transition='transform 4.2s cubic-bezier(.12,.72,.13,1)';
-  wheelSvg.style.transform=`rotate(${finalAngle}deg)`;
-  wheelCurAngle = finalAngle;
+  // 1단계: 빠르게 감속하며 목표를 살짝 넘김
+  wheelSvg.style.transition='transform 3.6s cubic-bezier(.1,.7,.15,1)';
+  wheelSvg.style.transform=`rotate(${overshoot}deg)`;
   spinTimer=setTimeout(()=>{
-    spinning=false; spinBtn.disabled=false;
-    const winner=wheelItems[winIdx];
-    wheelResult.innerHTML=`<div class="nm">🎉 ${winner.n}</div><div class="ct">${winner.cat}${winner.r?` · ★${winner.r.toFixed(1)}`:''}</div>`;
-    finishSpin(winner);
-  },4300);
+    // 2단계: 살짝 되돌아와서 정확한 위치에 "덜컹" 안착
+    wheelSvg.style.transition='transform .45s cubic-bezier(.34,1.56,.64,1)';
+    wheelSvg.style.transform=`rotate(${exactAngle}deg)`;
+    wheelCurAngle = exactAngle;
+    spinTimer=setTimeout(()=>{
+      spinning=false; spinBtn.disabled=false;
+      const winner=wheelItems[winIdx];
+      wheelResult.innerHTML=`<div class="nm">${winner.n}</div><div class="ct">${winner.cat}${winner.r?` · ★${winner.r.toFixed(1)}`:''}</div>`;
+      celebrateWinner();
+      finishSpin(winner);
+    },480);
+  },3600);
 }
 
 // ── 그리드 보드 룰렛: 칸을 순회하다 서서히 멈춤 ──
@@ -647,7 +709,7 @@ function spinGrid(pool){
   const center=document.createElement('div'); center.className='gcell center'; center.style.whiteSpace='pre-line'; center.textContent='오늘의\n점심';
   gridZone.appendChild(center);
   const winIdx=Math.floor(Math.random()*items.length);
-  let cur=0, speed=70; const minLaps=3;
+  let cur=0, speed=45; const minLaps=3;
   let targetSteps = minLaps*items.length + winIdx + 1, steps=0;
   function tick(){
     cells.forEach(c=>c.classList.remove('lit'));
@@ -656,10 +718,12 @@ function spinGrid(pool){
     const remain=targetSteps-steps;
     if(remain<=0){
       spinning=false; spinBtn.disabled=false;
+      celebrateWinner();
       finishSpinGridResult(items[winIdx]);
       return;
     }
-    if(remain<8) speed=Math.min(320, speed+38);
+    // 남은 스텝이 줄수록 급격히 느려짐(마지막엔 뚝뚝 끊기며 쫄깃하게)
+    if(remain<10) speed=Math.min(340, speed + 34);
     spinTimer=setTimeout(tick,speed);
   }
   tick();
@@ -677,7 +741,7 @@ function finishSpin(winner){
   if(winner.__isCat){
     // ── 스테이지1 종료: 결과를 그대로 유지, 사용자가 버튼 눌러야 다음 단계로 ──
     pendingCatWinner = winner;
-    rDesc.textContent = `🎉 "${winner.n}" 당첨! 아래 버튼으로 이제 그 안에서 가게를 뽑아봐`;
+    rDesc.textContent = `🎉 "${winner.n}" 당첨! 아래 버튼으로 이제 그 안에서 가게를 뽑아보세요`;
     rerollLine.style.display='block';
     spinBtn.disabled=false;
     spinBtn.textContent = `▶ "${winner.n}" 가게 뽑으러 가기`;
@@ -703,23 +767,30 @@ function finishSpin(winner){
 }
 function jumpToCategory(catName){
   // 스테이지1(카테고리 룰렛)을 건너뛰고 바로 그 카테고리 가게 룰렛으로
-  pendingCatWinner = {n:catName, cat:catName, __isCat:true};
-  catStepSec.style.display='none';
-  advanceToStage3();
+  jumpToPool(catName, P.filter(p=>p.cat===catName));
 }
-function advanceToStage3(){
+function jumpToUS(){
+  // US인증 가게만 모아서 즉시 룰렛
+  jumpToPool('US인증', P.filter(p=>p.us));
+}
+function jumpToPool(label, pool){
+  pendingCatWinner = {n:label, __isCat:true};
+  catStepSec.style.display='none';
+  advanceToStage3(pool);
+}
+function advanceToStage3(presetPool){
   const winner = pendingCatWinner; if(!winner) return;
   stage=3;
-  stagePool = P.filter(p=>p.cat===winner.n);
+  stagePool = presetPool || P.filter(p=>p.cat===winner.n);
   backStage.classList.add('on');
   setMode(rMode); // 여기서 화면을 깨끗이 비우고 스테이지2용 안내로 교체 (사용자가 버튼을 누른 "직후"라 자연스러움)
   stageLabel.textContent=`STAGE 2 · "${winner.n}" 가게 뽑는 중`; stageLabel.classList.add('on');
-  rDesc.textContent=`"${winner.n}" 안에서 어디로 갈지 뽑아봐`;
+  rDesc.textContent=`"${winner.n}" 안에서 어디로 갈지 뽑아보세요`;
   spinBtn.textContent='🎲 가게 뽑기';
   spinBtn.disabled = stagePool.length===0;
   spinBtnMode='spin';
   if(stagePool.length===0){
-    const msg='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어. 카테고리를 다시 골라줘</div>';
+    const msg='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요. 카테고리를 다시 골라주세요</div>';
     if(rMode==='slot') spinZone.innerHTML=msg; else if(rMode==='wheel') wheelResult.innerHTML=msg; else gridZone.innerHTML=msg;
   }
 }
@@ -735,8 +806,8 @@ document.getElementById('rerollBtn').onclick=doSpin;
 
 /* SDK 로드 타임아웃 */
 setTimeout(()=>{if(!window.kakao||!kakao.maps||!map)initKakao();},300);
-setTimeout(()=>{if(!map)bootError('<b>카카오 지도 로딩 실패(타임아웃).</b><br>도메인 등록·앱키를 확인해줘. GitHub Pages 주소로 열어야 동작해.');},5000);
+setTimeout(()=>{if(!map)bootError('<b>카카오 지도 로딩 실패(타임아웃).</b><br>도메인 등록·앱키를 확인해주세요. GitHub Pages 주소로 열어야 동작합니다.');},5000);
 </script>
-<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=177c28ed6f39af5ef37b1cc2c863971c&autoload=false&libraries=services" onload="initKakao()" onerror="bootError('<b>SDK 스크립트를 불러오지 못했어.</b><br>도메인 등록 여부·네트워크를 확인해줘.')"></script>
+<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=177c28ed6f39af5ef37b1cc2c863971c&autoload=false&libraries=services" onload="initKakao()" onerror="bootError('<b>SDK 스크립트를 불러오지 못했어요.</b><br>도메인 등록 여부·네트워크를 확인해주세요.')"></script>
 </body>
 </html>
