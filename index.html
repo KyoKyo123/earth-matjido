@@ -534,10 +534,17 @@ document.getElementById('diceOpen').onclick=openDice;
 document.getElementById('rClose').onclick=closeDice;
 rBg.addEventListener('click',e=>{ if(e.target===rBg) closeDice(); });
 
+let __lastSampleNames=[]; // 직전에 화면에 떴던 이름들 - 다시 돌릴 때 최대한 안 겹치게
 function sampleFor(pool,n){
-  if(pool.length<=n) return [...pool];
-  const shuffled=[...pool].sort(()=>Math.random()-0.5);
-  return shuffled.slice(0,n);
+  if(pool.length<=n){ __lastSampleNames=pool.map(p=>p.n); return [...pool]; }
+  // 직전에 안 나왔던 후보를 우선 배치, 부족하면 나머지로 채움
+  const fresh = pool.filter(p=>!__lastSampleNames.includes(p.n));
+  const stale = pool.filter(p=>__lastSampleNames.includes(p.n));
+  const shuffledFresh = [...fresh].sort(()=>Math.random()-0.5);
+  const shuffledStale = [...stale].sort(()=>Math.random()-0.5);
+  const picked = [...shuffledFresh, ...shuffledStale].slice(0,n).sort(()=>Math.random()-0.5);
+  __lastSampleNames = picked.map(p=>p.n);
+  return picked;
 }
 
 function doSpin(){
@@ -594,8 +601,10 @@ function buildWheelSVG(items){
     svg+=`<path d="M${cx},${cy} L${x0.toFixed(2)},${y0.toFixed(2)} A${r},${r} 0 ${large} 1 ${x1.toFixed(2)},${y1.toFixed(2)} Z" fill="${col}" stroke="#fff" stroke-width="1.5"/>`;
     const mid=(a0+a1)/2, tx=cx+r*0.62*Math.cos(mid), ty=cy+r*0.62*Math.sin(mid);
     const rot=(i*step+step/2);
-    const label=p.n.length>6?p.n.slice(0,6)+'…':p.n;
-    svg+=`<text x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" fill="#fff" font-size="8" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(${rot.toFixed(1)} ${tx.toFixed(2)} ${ty.toFixed(2)})">${label}</text>`;
+    const maxLen = n>12?4:n>8?5:6;
+    const fsize = n>12?6.5:n>8?7.3:8;
+    const label=p.n.length>maxLen?p.n.slice(0,maxLen)+'…':p.n;
+    svg+=`<text x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" fill="#fff" font-size="${fsize}" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(${rot.toFixed(1)} ${tx.toFixed(2)} ${ty.toFixed(2)})">${label}</text>`;
   });
   return svg;
 }
@@ -603,7 +612,7 @@ let wheelItems=[],wheelCurAngle=0;
 function spinWheel(pool){
   spinning=true; spinBtn.disabled=true; rerollLine.style.display='none'; spinBtn.onclick=null;
   wheelResult.innerHTML='';
-  wheelItems=sampleFor(pool, Math.min(10, pool.length));
+  wheelItems=sampleFor(pool, Math.min(16, pool.length));
   wheelSvg.innerHTML=buildWheelSVG(wheelItems);
   const n=wheelItems.length, step=360/n;
   const winIdx=Math.floor(Math.random()*n);
@@ -627,7 +636,7 @@ function spinWheel(pool){
 // ── 그리드 보드 룰렛: 칸을 순회하다 서서히 멈춤 ──
 function spinGrid(pool){
   spinning=true; spinBtn.disabled=true; rerollLine.style.display='none'; spinBtn.onclick=null;
-  const items=sampleFor(pool, Math.min(11, pool.length));
+  const items=sampleFor(pool, Math.min(20, pool.length));
   gridZone.innerHTML='';
   const cells=[];
   items.forEach(p=>{
