@@ -510,10 +510,10 @@ function resetResultArea(){
   spinZone.innerHTML='<div class="spin-idle">버튼을 눌러 돌려봐</div>';
   wheelResult.innerHTML=''; wheelSvg.style.transition='none'; wheelSvg.style.transform='rotate(0deg)';
   gridZone.innerHTML='';
-  rerollLine.style.display='none'; spinBtn.textContent='🎲 돌리기'; spinBtn.disabled=false; spinBtn.onclick=null;
+  rerollLine.style.display='none'; spinBtn.textContent='🎲 돌리기'; spinBtn.disabled=false; spinBtnMode='spin';
 }
 function goStage1(){
-  stage=1; catCounts={}; stagePool=null;
+  stage=1; catCounts={}; stagePool=null; pendingCatWinner=null; window.__finalWinner=null;
   catStepSec.style.display='block';
   stageLabel.classList.remove('on'); backStage.classList.remove('on');
   rDesc.textContent='먹고싶은 카테고리마다 인원수를 넣어봐 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 원판이 돌아가';
@@ -656,24 +656,21 @@ function finishSpinGridResult(winner){
   finishSpin(winner);
 }
 
+let pendingCatWinner=null;
 function finishSpin(winner){
   if(winner.__isCat){
-    // ── 스테이지1 종료 → 스테이지2(해당 카테고리 가게들) 준비 ──
-    stage=3;
-    stagePool = P.filter(p=>p.cat===winner.n);
-    rSize = Object.values(catCounts).reduce((a,b)=>a+b,0); // 총 인원 = 경고 로직용
-    backStage.classList.add('on');
-    setTimeout(()=>{
-      setMode(rMode); // resetResultArea 포함 - 여기서 리셋되고 나서 아래에서 다시 세팅
-      stageLabel.textContent=`STAGE 2 · "${winner.n}" 가게 뽑는 중`; stageLabel.classList.add('on');
-      rDesc.textContent=`"${winner.n}" 당첨! 이제 그 안에서 어디로 갈지 뽑을게`;
-      spinBtn.textContent='🎲 가게 뽑기';
-      spinBtn.disabled=false;
-    },1100); // 카테고리 당첨 화면을 잠깐 보여준 뒤 다음 판으로
+    // ── 스테이지1 종료: 결과를 그대로 유지, 사용자가 버튼 눌러야 다음 단계로 ──
+    pendingCatWinner = winner;
+    rDesc.textContent = `🎉 "${winner.n}" 당첨! 아래 버튼으로 이제 그 안에서 가게를 뽑아봐`;
+    rerollLine.style.display='block';
+    spinBtn.disabled=false;
+    spinBtn.textContent = `▶ "${winner.n}" 가게 뽑으러 가기`;
+    spinBtnMode='next';
     return;
   }
   // ── 스테이지2 종료: 최종 가게 확정 ──
-  rerollLine.style.display='block'; spinBtn.textContent='결정! 지도에서 보기';
+  window.__finalWinner = winner;
+  rerollLine.style.display='block';
   window.__lastRSize = rSize;
   const warn = groupWarning(winner, rSize);
   if(warn){
@@ -684,9 +681,33 @@ function finishSpin(winner){
     else if(rMode==='wheel') wheelResult.appendChild(box);
     else gridZone.appendChild(box);
   }
-  spinBtn.onclick=()=>{ closeDice(); openPanel(winner); };
+  spinBtn.disabled=false;
+  spinBtn.textContent='결정! 지도에서 보기';
+  spinBtnMode='confirm';
 }
-document.getElementById('spinBtn').addEventListener('click',()=>{ if(spinBtn.textContent.includes('돌리기')) doSpin(); });
+function advanceToStage3(){
+  const winner = pendingCatWinner; if(!winner) return;
+  stage=3;
+  stagePool = P.filter(p=>p.cat===winner.n);
+  backStage.classList.add('on');
+  setMode(rMode); // 여기서 화면을 깨끗이 비우고 스테이지2용 안내로 교체 (사용자가 버튼을 누른 "직후"라 자연스러움)
+  stageLabel.textContent=`STAGE 2 · "${winner.n}" 가게 뽑는 중`; stageLabel.classList.add('on');
+  rDesc.textContent=`"${winner.n}" 안에서 어디로 갈지 뽑아봐`;
+  spinBtn.textContent='🎲 가게 뽑기';
+  spinBtn.disabled = stagePool.length===0;
+  spinBtnMode='spin';
+  if(stagePool.length===0){
+    const msg='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어. 카테고리를 다시 골라줘</div>';
+    if(rMode==='slot') spinZone.innerHTML=msg; else if(rMode==='wheel') wheelResult.innerHTML=msg; else gridZone.innerHTML=msg;
+  }
+}
+let spinBtnMode='spin'; // 'spin' | 'next' | 'confirm'
+document.getElementById('spinBtn').addEventListener('click',()=>{
+  if(spinning) return;
+  if(spinBtnMode==='spin') doSpin();
+  else if(spinBtnMode==='next') advanceToStage3();
+  else if(spinBtnMode==='confirm') { closeDice(); openPanel(window.__finalWinner); }
+});
 document.getElementById('rerollBtn').onclick=doSpin;
 
 /* SDK 로드 타임아웃 */
