@@ -80,8 +80,7 @@ h1 em{font-style:normal;color:var(--us)}
 .tag.t-us{background:var(--us);color:#fff}.tag.t-cat{background:#F3EFE5;color:#6E6A61}
 .tag.t-w2{background:#C43A2E;color:#fff}.tag.t-w1{background:#F2B705;color:#3A2E00}.tag.t-ct{background:var(--ct);color:#fff}
 .s-stats{margin-top:5px;font-size:.8rem;color:var(--sub)}.s-stats b{color:var(--ink)}.star{color:#E8A100}
-#rv{width:100%;height:100%;background:#EEE;display:none;overflow:hidden}
-.rv-none{margin-top:9px;font-size:.76rem;color:var(--sub);background:#F4F1E8;border-radius:9px;padding:8px 11px;display:none}
+
 .walkline{margin-top:9px;font-size:.77rem;color:var(--blue);font-weight:700}
 .ctline{margin-top:7px;font-size:.75rem;color:var(--sub)}.ctline b{color:var(--ct)}
 .planbox{margin-top:9px;background:#FFF4E5;border:1px dashed #E09B4C;border-radius:10px;padding:9px 11px;font-size:.79rem;line-height:1.55;color:#5C4A2E}.planbox b{color:#B4570E}
@@ -90,8 +89,10 @@ h1 em{font-style:normal;color:var(--us)}
 .usbox .who{font-size:.69rem;font-weight:800;color:var(--us);letter-spacing:.05em;margin-bottom:3px}
 .usbox p{font-size:.85rem;line-height:1.55;color:#1F3D2C;white-space:pre-line}
 .gmemo{margin-top:8px;font-size:.82rem;line-height:1.5;color:#4A453D}
-.core-photo{width:100%;height:170px;border-radius:12px;overflow:hidden;background:#EEE;position:relative;margin-top:10px}
-.core-photo iframe,.core-photo #rv{width:100%;height:100%;border:none}
+.core-memo{margin-top:10px;background:#FBF6EA;border:1.5px solid #EBDFC0;border-radius:12px;padding:12px 13px;font-size:.9rem;line-height:1.55;color:#3A331F;font-weight:500}
+.menubtn{width:100%;margin-top:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#3C2A6E,#2E2058);color:#fff;
+  font:inherit;font-weight:800;font-size:.92rem;padding:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 10px rgba(60,42,110,.3)}
+.menubtn:active{transform:scale(.98)}
 .core-row{display:flex;align-items:center;gap:10px;margin-top:11px;flex-wrap:wrap}
 .core-phone{display:flex;align-items:center;gap:6px;font-size:.85rem;font-weight:700;color:var(--ink)}
 .core-phone a{color:var(--blue);text-decoration:none}
@@ -127,6 +128,18 @@ footer{padding:5px 13px;font-size:.64rem;color:#B3AA9B;background:var(--paper);b
 .roulette-sec{margin-bottom:16px}
 .roulette-sec .label{font-size:.76rem;font-weight:800;color:var(--sub);margin-bottom:7px;letter-spacing:.02em}
 .roulette-opts{display:flex;flex-wrap:wrap;gap:6px}
+.catcount-list{display:flex;flex-direction:column;gap:7px}
+.catcount-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;background:#fff}
+.catcount-row .cname{flex:1;font-size:.85rem;font-weight:700;color:var(--ink)}
+.catcount-row .stepper{display:flex;align-items:center;gap:8px}
+.catcount-row .stepbtn{width:26px;height:26px;border-radius:50%;border:none;background:#F3EFE5;color:var(--ink);font-weight:800;font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.catcount-row .stepbtn:active{background:var(--reg);color:#fff}
+.catcount-row .cnum{width:20px;text-align:center;font-weight:800;font-size:.9rem}
+.catcount-row.active{border-color:var(--reg);background:#FFF8F3}
+.stage-label{font-size:.72rem;font-weight:800;color:var(--reg);letter-spacing:.05em;margin-bottom:6px;display:none}
+.stage-label.on{display:block}
+.backstage{border:none;background:none;color:var(--sub);font:inherit;font-size:.76rem;cursor:pointer;text-decoration:underline;margin-bottom:8px;display:none}
+.backstage.on{display:inline-block}
 .ropt{border:1.5px solid var(--line);background:#fff;color:var(--sub);border-radius:10px;padding:8px 12px;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer}
 .ropt.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .spinzone{position:relative;height:150px;display:flex;align-items:center;justify-content:center;margin:10px 0 14px;
@@ -195,17 +208,19 @@ footer{padding:5px 13px;font-size:.64rem;color:#B3AA9B;background:var(--paper);b
   <div class="modal">
     <button class="modal-x" id="rClose">✕</button>
     <h2>🎯 오늘 뭐 먹지</h2>
-    <div class="desc">카테고리·인원 골라서 돌리면 갈 곳이 정해져</div>
+    <div class="desc" id="rDesc">먹고싶은 카테고리마다 인원수를 넣어봐 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 원판이 돌아가</div>
+    <div class="stage-label" id="stageLabel">STAGE 2 · 카테고리 확정</div>
+    <button class="backstage" id="backStage">← 카테고리 다시 정하기</button>
     <div class="modetabs" id="modeTabs">
       <button class="modetab on" data-mode="slot">🎰 슬롯</button>
       <button class="modetab" data-mode="wheel">🎡 원판</button>
       <button class="modetab" data-mode="grid">🎯 보드</button>
     </div>
-    <div class="roulette-sec">
-      <div class="label">카테고리</div>
-      <div class="roulette-opts" id="rCatOpts"></div>
+    <div class="roulette-sec" id="catStepSec">
+      <div class="label">카테고리별 인원 (합계 <span id="totalCount">0</span>명)</div>
+      <div class="catcount-list" id="catCountList"></div>
     </div>
-    <div class="roulette-sec">
+    <div class="roulette-sec" id="sizeSecOld" style="display:none">
       <div class="label">인원</div>
       <div class="roulette-opts" id="rSizeOpts"></div>
     </div>
@@ -266,7 +281,7 @@ function lunchPlan(p){const w=p.walk,leave=t12(w);
 
 const IS_MOBILE=/android|iphone|ipad|ipod/i.test(navigator.userAgent);
 const isDesktop=()=>window.innerWidth>=760;
-let map,rv,rvClient;
+let map;
 
 function bootError(msg){
   const el=document.getElementById('loaderr');
@@ -281,7 +296,6 @@ function buildMap(){
   map=new kakao.maps.Map(document.getElementById('map'),{
     center:new kakao.maps.LatLng(OFFICE.lat,OFFICE.lng), level:4 });
   map.setMaxLevel(7);
-  rvClient=new kakao.maps.RoadviewClient();
   const office=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(OFFICE.lat,OFFICE.lng),
     content:'<div style="background:#1B4E8E;color:#fff;border:2px solid #fff;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.4)">🏢</div>',
     zIndex:9});
@@ -368,6 +382,7 @@ function openPanel(p){
   path.forEach(ll=>bounds.extend(ll));
   const min=p.walk;
   const warnHtml = groupWarning(p, window.__lastRSize||0);
+  const memoText = p.memo || p.usr || '';
   panel.innerHTML=`
     <div class="panel-close"><span>${p.n}</span><button onclick="closePanel()">✕</button></div>
     <button class="expandtoggle-mobile" id="expandToggleMobile">펼치기 ▾</button>
@@ -378,7 +393,8 @@ function openPanel(p){
       ${p.us?'<span class="tag t-us">US인증</span>':''}<span class="tag t-cat">${p.cat}</span>
       ${p.gold?'<span class="tag t-ct">🔵 예약가능</span>':''}</div>
     <div class="s-stats">${p.r?`<span class="star">★</span> <b>${p.r.toFixed(1)}</b> · 리뷰 ${p.c.toLocaleString()}`:''}${p.approx?' · <small>좌표 근사</small>':''}</div>
-    <div class="core-photo"><div id="rv"></div><div class="rv-none" id="rvnone">사진 없음 — 아래 카카오맵 버튼에서 확인</div></div>
+    ${memoText?`<div class="core-memo">${memoText}</div>`:''}
+    <button class="menubtn" id="menuBtn">📷 사진·메뉴·가격 보기</button>
     <div class="core-row">
       ${p.phone?`<div class="core-phone">📞 <a href="tel:${p.phone}">${p.phone}</a></div>`:'<div class="core-phone" style="color:var(--sub);font-weight:400">전화번호 미확인</div>'}
     </div>
@@ -392,16 +408,15 @@ function openPanel(p){
       ${p.wait===3?'<span class="tag t-w2">웨이팅 헬·원격필수</span>':p.wait===2?'<span class="tag t-w2">웨이팅 필수</span>':p.wait===1?'<span class="tag t-w1">붐빔 주의</span>':''}
       <div class="ctline">${p.ct===1?'📱 캐치테이블 <b>입점 확인됨</b> — 원격 웨이팅 가능':p.ct===-1?'📱 캐치테이블 <b style="color:#C43A2E">미입점</b> — 현장만':'📱 캐치테이블 <b>미확인</b> — 버튼으로 검색'}</div>
       ${p.wait?`<div class="planbox">⏰ <b>12시 식사 플랜</b> — ${lunchPlan(p)}</div>`:''}
-      ${p.us?`<div class="usbox"><div class="who">🟢 US 동료 후기 (사내 대동여지도)</div><p>${p.usr}</p></div>`:''}
-      ${p.memo?`<div class="gmemo">${p.memo}</div>`:''}
+      ${p.us&&p.usr!==memoText?`<div class="usbox"><div class="who">🟢 US 동료 후기 (사내 대동여지도)</div><p>${p.usr}</p></div>`:''}
       <div class="s-links" id="slinksExtra"></div>
     </div>
     </div>`;
+  const menuBtn=panel.querySelector('#menuBtn');
+  menuBtn.onclick=()=>window.open(p.kakaoUrl||`https://map.kakao.com/?q=${encodeURIComponent(p.n)}`,'_blank','noopener');
   const Lc=panel.querySelector('#slinksCore');
   const Le=panel.querySelector('#slinksExtra');
   const mk=(c,t,f)=>{const b=document.createElement('button');b.className=c;b.textContent=t;b.onclick=f;return b;};
-  if(p.kakaoUrl) Lc.appendChild(mk('kakao','📷 사진·메뉴 보기(카카오맵)',()=>window.open(p.kakaoUrl,'_blank','noopener')));
-  else Lc.appendChild(mk('kakao','📷 카카오맵 검색',()=>window.open(`https://map.kakao.com/?q=${encodeURIComponent(p.n)}`,'_blank','noopener')));
   Lc.appendChild(mk('kakao','🚶 길찾기',()=>kakaoRoute(p)));
   if(p.wait||p.ct===1){const lb=p.ct===1?'📱 캐치테이블 웨이팅':p.ct===-1?'캐치테이블(미입점)':'캐치테이블 검색';
     Le.appendChild(mk('ctlink',lb,()=>window.open(p.ctUrl||p.ctSearch,'_blank','noopener')));}
@@ -414,23 +429,13 @@ function openPanel(p){
   const expMobile=panel.querySelector('#expandToggleMobile');
   expMobile.onclick=()=>{ const ex=panel.classList.toggle('expanded'); expMobile.textContent = ex? '접기 ▴':'펼치기 ▾'; };
   panel.classList.add('open');
-  loadRoadview(p);
   requestAnimationFrame(()=>{
     setTimeout(()=>{
       if(map){ kakao.maps.event.trigger(map,'resize'); map.setBounds(bounds); }
     },80);
   });
 }
-function loadRoadview(p){
-  const box=document.getElementById('rv'),none=document.getElementById('rvnone');
-  const pos=new kakao.maps.LatLng(p.lat,p.lng);
-  rvClient.getNearestPanoId(pos,80,function(panoId){
-    if(panoId===null){ none.style.display='block'; box.style.display='none'; return; }
-    box.style.display='block'; none.style.display='none';
-    if(!rv){ rv=new kakao.maps.Roadview(box); }
-    rv.setPanoId(panoId,pos);
-  });
-}
+
 function closePanel(){
   panel.classList.remove('open');
   panel.classList.remove('expanded');
@@ -453,24 +458,38 @@ qi.addEventListener('input',()=>{q=qi.value.trim().toLowerCase();qc.classList.to
 qc.onclick=()=>{qi.value="";q="";qc.classList.remove('on');applyFilter();qi.focus();};
 document.getElementById('fab').onclick=()=>{const pool=P.filter(matchCat);if(pool.length){window.__lastRSize=0;openPanel(pool[Math.floor(Math.random()*pool.length)]);}};
 
-/* ── 룰렛 모달 ── */
-const RCATS=["전체","한식","일식","중식","양식","아시안","고기","치킨·술집","카페·베이커리"];
-const RSIZES=[{l:"혼자",v:1},{l:"2~3명",v:2},{l:"4~6명",v:4},{l:"단체(7+)",v:7}];
-let rCat="전체",rSize=2,spinning=false,spinTimer=null;
+/* ── 룰렛 모달: 2단계 (카테고리 원판 → 가게 원판) ── */
+const RCATS_ALL=["한식","일식","중식","양식","아시안","고기","치킨·술집","카페·베이커리"];
+let catCounts={};        // {카테고리명: 인원수}
+let rSize=0;             // 확정된 총 인원(=경고 로직용, 스테이지2 진입 시 총합으로 세팅)
+let stage=1;             // 1=카테고리 인원입력, 2=카테고리 원판, 3=가게 원판
+let stagePool=null;      // 스테이지3에서 쓸 가게 후보(당첨 카테고리로 필터된 P)
+let spinning=false, spinTimer=null;
 const rBg=document.getElementById('rBg'),spinZone=document.getElementById('spinZone'),spinBtn=document.getElementById('spinBtn'),rerollLine=document.getElementById('rerollLine');
-function buildRouletteOpts(){
-  const co=document.getElementById('rCatOpts'); co.innerHTML='';
-  RCATS.forEach(c=>{const b=document.createElement('button');b.className='ropt'+(c===rCat?' on':'');b.textContent=c;
-    b.onclick=()=>{rCat=c;[...co.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');};co.appendChild(b);});
-  const so=document.getElementById('rSizeOpts'); so.innerHTML='';
-  RSIZES.forEach(s=>{const b=document.createElement('button');b.className='ropt'+(s.v===rSize?' on':'');b.textContent=s.l;
-    b.onclick=()=>{rSize=s.v;[...so.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');};so.appendChild(b);});
+const rDesc=document.getElementById('rDesc'),stageLabel=document.getElementById('stageLabel'),backStage=document.getElementById('backStage'),catStepSec=document.getElementById('catStepSec');
+
+function buildCatStepper(){
+  const list=document.getElementById('catCountList'); list.innerHTML='';
+  RCATS_ALL.forEach(c=>{
+    const row=document.createElement('div'); row.className='catcount-row';
+    const n=catCounts[c]||0;
+    row.innerHTML=`<span class="cname">${c}</span><div class="stepper">
+      <button class="stepbtn" data-act="minus">−</button><span class="cnum">${n}</span><button class="stepbtn" data-act="plus">+</button></div>`;
+    row.classList.toggle('active', n>0);
+    row.querySelector('[data-act=minus]').onclick=()=>{ catCounts[c]=Math.max(0,(catCounts[c]||0)-1); buildCatStepper(); };
+    row.querySelector('[data-act=plus]').onclick=()=>{ catCounts[c]=(catCounts[c]||0)+1; buildCatStepper(); };
+    list.appendChild(row);
+  });
+  const total=Object.values(catCounts).reduce((a,b)=>a+b,0);
+  document.getElementById('totalCount').textContent=total;
+  spinBtn.disabled = total===0;
+  spinBtn.textContent = total===0 ? '카테고리에 인원을 넣어줘' : '🎲 카테고리 룰렛 돌리기';
 }
-function roulettePool(){
-  // 인원 많으면 좌석 넉넉한 곳 우선(치킨·술집/고기/카페 등은 그대로 두되, 아주 작은 1인전문은 배제 안함 - 데이터에 좌석수 없어 카테고리로만 대략 필터)
-  let pool = P.filter(p=> rCat==="전체" ? true : p.cat===rCat);
-  if(rSize>=7) pool = pool.filter(p=>!["카페·베이커리"].includes(p.cat) || pool.length<10) ;
-  return pool.length?pool:P;
+function catRouletteItems(){
+  // 카테고리별 인원수만큼 칸을 반복 생성 → 배열 원소 자체가 "가짜 P 객체"(n=카테고리명) 역할
+  const items=[];
+  RCATS_ALL.forEach(c=>{ const n=catCounts[c]||0; for(let i=0;i<n;i++) items.push({n:c,cat:c,__isCat:true}); });
+  return items;
 }
 let rMode='slot';
 const wheelZone=document.getElementById('wheelZone'),wheelSvg=document.getElementById('wheelSvg'),wheelResult=document.getElementById('wheelResult'),gridZone=document.getElementById('gridZone');
@@ -493,8 +512,17 @@ function resetResultArea(){
   gridZone.innerHTML='';
   rerollLine.style.display='none'; spinBtn.textContent='🎲 돌리기'; spinBtn.disabled=false; spinBtn.onclick=null;
 }
-function openDice(){ buildRouletteOpts(); setMode('slot'); rBg.classList.add('open'); }
+function goStage1(){
+  stage=1; catCounts={}; stagePool=null;
+  catStepSec.style.display='block';
+  stageLabel.classList.remove('on'); backStage.classList.remove('on');
+  rDesc.textContent='먹고싶은 카테고리마다 인원수를 넣어봐 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 원판이 돌아가';
+  buildCatStepper();
+  setMode(rMode);
+}
+function openDice(){ goStage1(); rBg.classList.add('open'); }
 function closeDice(){ rBg.classList.remove('open'); if(spinTimer){clearInterval(spinTimer);clearTimeout(spinTimer);} spinning=false; }
+backStage.onclick=()=>{ goStage1(); };
 document.getElementById('diceOpen').onclick=openDice;
 document.getElementById('rClose').onclick=closeDice;
 rBg.addEventListener('click',e=>{ if(e.target===rBg) closeDice(); });
@@ -507,12 +535,22 @@ function sampleFor(pool,n){
 
 function doSpin(){
   if(spinning) return;
-  const pool=roulettePool();
-  if(!pool.length){
-    if(rMode==='slot') spinZone.innerHTML='<div class="spin-idle">이 조건엔 맞는 곳이 없어. 카테고리를 바꿔봐</div>';
-    else if(rMode==='wheel') wheelResult.innerHTML='<div class="spin-idle">이 조건엔 맞는 곳이 없어</div>';
-    else gridZone.innerHTML='<div class="spin-idle">이 조건엔 맞는 곳이 없어</div>';
-    return;
+  let pool;
+  if(stage===1){
+    pool=catRouletteItems();
+    if(!pool.length) return; // 버튼이 이미 disabled라 여기 안 옴
+    // 스테이지1 진입: UI를 카테고리 입력 → 결과 화면으로 전환
+    catStepSec.style.display='none';
+    stageLabel.textContent='STAGE 1 · 카테고리 뽑는 중'; stageLabel.classList.add('on');
+    rDesc.textContent='먼저 어떤 종류를 먹을지부터 정해';
+  } else { // stage===3 (가게 뽑기)
+    pool=stagePool;
+    if(!pool.length){
+      if(rMode==='slot') spinZone.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어</div>';
+      else if(rMode==='wheel') wheelResult.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어</div>';
+      else gridZone.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어</div>';
+      return;
+    }
   }
   if(rMode==='slot') spinSlot(pool);
   else if(rMode==='wheel') spinWheel(pool);
@@ -619,6 +657,22 @@ function finishSpinGridResult(winner){
 }
 
 function finishSpin(winner){
+  if(winner.__isCat){
+    // ── 스테이지1 종료 → 스테이지2(해당 카테고리 가게들) 준비 ──
+    stage=3;
+    stagePool = P.filter(p=>p.cat===winner.n);
+    rSize = Object.values(catCounts).reduce((a,b)=>a+b,0); // 총 인원 = 경고 로직용
+    backStage.classList.add('on');
+    setTimeout(()=>{
+      setMode(rMode); // resetResultArea 포함 - 여기서 리셋되고 나서 아래에서 다시 세팅
+      stageLabel.textContent=`STAGE 2 · "${winner.n}" 가게 뽑는 중`; stageLabel.classList.add('on');
+      rDesc.textContent=`"${winner.n}" 당첨! 이제 그 안에서 어디로 갈지 뽑을게`;
+      spinBtn.textContent='🎲 가게 뽑기';
+      spinBtn.disabled=false;
+    },1100); // 카테고리 당첨 화면을 잠깐 보여준 뒤 다음 판으로
+    return;
+  }
+  // ── 스테이지2 종료: 최종 가게 확정 ──
   rerollLine.style.display='block'; spinBtn.textContent='결정! 지도에서 보기';
   window.__lastRSize = rSize;
   const warn = groupWarning(winner, rSize);
