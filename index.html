@@ -121,7 +121,7 @@ footer{padding:5px 13px;font-size:.64rem;color:#B3AA9B;background:var(--paper);b
 /* ── 룰렛 모달 ── */
 .modal-bg{position:fixed;inset:0;background:rgba(20,18,14,.55);z-index:100;display:none;align-items:center;justify-content:center;padding:16px}
 .modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:20px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;padding:22px 20px 20px;position:relative}
+.modal{background:#fff;border-radius:20px;max-width:420px;width:100%;min-height:min(560px,80vh);max-height:90vh;overflow-y:auto;padding:22px 20px 20px;position:relative;display:flex;flex-direction:column}
 .modal h2{font-family:'Black Han Sans',sans-serif;font-size:1.3rem;margin-bottom:4px}
 .modal .desc{font-size:.78rem;color:var(--sub);margin-bottom:16px}
 .modal-x{position:absolute;right:14px;top:16px;border:none;background:#F3EFE5;color:var(--sub);width:28px;height:28px;border-radius:50%;font-size:.9rem;cursor:pointer}
@@ -136,6 +136,9 @@ footer{padding:5px 13px;font-size:.64rem;color:#B3AA9B;background:var(--paper);b
 .catcount-row .stepbtn:active{background:var(--reg);color:#fff}
 .catcount-row .cnum{width:20px;text-align:center;font-weight:800;font-size:.9rem}
 .catcount-row.active{border-color:var(--reg);background:#FFF8F3}
+.catcount-row .jumpbtn{border:1.5px solid var(--ct);background:#fff;color:var(--ct);border-radius:8px;
+  font:inherit;font-size:.68rem;font-weight:800;padding:5px 9px;cursor:pointer;white-space:nowrap}
+.catcount-row .jumpbtn:active{background:var(--ct);color:#fff}
 .stage-label{font-size:.72rem;font-weight:800;color:var(--reg);letter-spacing:.05em;margin-bottom:6px;display:none}
 .stage-label.on{display:block}
 .backstage{border:none;background:none;color:var(--sub);font:inherit;font-size:.76rem;cursor:pointer;text-decoration:underline;margin-bottom:8px;display:none}
@@ -150,6 +153,8 @@ footer{padding:5px 13px;font-size:.64rem;color:#B3AA9B;background:var(--paper);b
 .spin-idle{font-size:.85rem;color:#C7BDA8;font-weight:700}
 .spinbtn{width:100%;border:none;border-radius:13px;background:linear-gradient(135deg,#F25C1F,#E0451A);color:#fff;
   font:inherit;font-weight:800;font-size:1rem;padding:14px;cursor:pointer;box-shadow:0 4px 14px rgba(242,92,31,.4)}
+.modal{justify-content:flex-start}
+.spinbtn{margin-top:auto}
 .spinbtn:disabled{opacity:.55;cursor:default}
 .spinbtn:active:not(:disabled){transform:scale(.98)}
 .reroll-line{text-align:center;margin-top:10px;font-size:.78rem;color:var(--sub)}
@@ -473,11 +478,13 @@ function buildCatStepper(){
   RCATS_ALL.forEach(c=>{
     const row=document.createElement('div'); row.className='catcount-row';
     const n=catCounts[c]||0;
-    row.innerHTML=`<span class="cname">${c}</span><div class="stepper">
-      <button class="stepbtn" data-act="minus">−</button><span class="cnum">${n}</span><button class="stepbtn" data-act="plus">+</button></div>`;
+    row.innerHTML=`<span class="cname">${c}</span>
+      <button class="jumpbtn">바로 이걸로</button>
+      <div class="stepper"><button class="stepbtn" data-act="minus">−</button><span class="cnum">${n}</span><button class="stepbtn" data-act="plus">+</button></div>`;
     row.classList.toggle('active', n>0);
     row.querySelector('[data-act=minus]').onclick=()=>{ catCounts[c]=Math.max(0,(catCounts[c]||0)-1); buildCatStepper(); };
     row.querySelector('[data-act=plus]').onclick=()=>{ catCounts[c]=(catCounts[c]||0)+1; buildCatStepper(); };
+    row.querySelector('.jumpbtn').onclick=()=>{ jumpToCategory(c); };
     list.appendChild(row);
   });
   const total=Object.values(catCounts).reduce((a,b)=>a+b,0);
@@ -685,6 +692,12 @@ function finishSpin(winner){
   spinBtn.textContent='결정! 지도에서 보기';
   spinBtnMode='confirm';
 }
+function jumpToCategory(catName){
+  // 스테이지1(카테고리 룰렛)을 건너뛰고 바로 그 카테고리 가게 룰렛으로
+  pendingCatWinner = {n:catName, cat:catName, __isCat:true};
+  catStepSec.style.display='none';
+  advanceToStage3();
+}
 function advanceToStage3(){
   const winner = pendingCatWinner; if(!winner) return;
   stage=3;
@@ -701,11 +714,12 @@ function advanceToStage3(){
     if(rMode==='slot') spinZone.innerHTML=msg; else if(rMode==='wheel') wheelResult.innerHTML=msg; else gridZone.innerHTML=msg;
   }
 }
-let spinBtnMode='spin'; // 'spin' | 'next' | 'confirm'
+let spinBtnMode='spin', clickLocked=false; // 'spin' | 'next' | 'confirm'
+function lockClicksBriefly(ms){ clickLocked=true; setTimeout(()=>{clickLocked=false;},ms); }
 document.getElementById('spinBtn').addEventListener('click',()=>{
-  if(spinning) return;
+  if(spinning || clickLocked) return;
   if(spinBtnMode==='spin') doSpin();
-  else if(spinBtnMode==='next') advanceToStage3();
+  else if(spinBtnMode==='next'){ lockClicksBriefly(400); advanceToStage3(); }
   else if(spinBtnMode==='confirm') { closeDice(); openPanel(window.__finalWinner); }
 });
 document.getElementById('rerollBtn').onclick=doSpin;
