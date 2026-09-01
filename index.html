@@ -42,6 +42,8 @@ h1 em{font-style:normal;color:var(--us)}
 .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .chip.us{color:var(--us);border-color:#C6E3CE}.chip.us.on{background:var(--us);border-color:var(--us);color:#fff}
 .chip.ctc{color:var(--ct);border-color:#C4DEF7}.chip.ctc.on{background:var(--ct);border-color:var(--ct);color:#fff}
+.chip.time{color:var(--reg-deep);border-color:#F3C8AE}.chip.time.on{background:var(--reg);border-color:var(--reg);color:#fff}
+.pin-dim{opacity:.4;filter:grayscale(.3)}
 
 /* ── 본문: 데스크톱=좌우분할, 모바일=지도+바텀시트 ── */
 #body{position:relative;flex:1;min-width:0;display:flex;overflow:hidden}
@@ -224,6 +226,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
     <button class="dicebtn" id="diceOpen">🎲 룰렛</button>
   </div>
   <div class="chips" id="chips"></div>
+  <div class="chips timechips" id="timeChips"></div>
 </header>
 <div id="body">
   <div id="panel"></div>
@@ -343,7 +346,7 @@ function buildMap(){
 }
 
 const CATS=["전체","US인증","US+예약가능","한식","일식","중식","양식","아시안","인도·커리","고기","치킨·술집","샐러드·가볍게","카페·베이커리"];
-let active="전체",q="",curLines=[],curOpen=null;
+let active="전체",q="",curLines=[],curOpen=null,timeFilter=0; // timeFilter: 0=끔, 5, 10(분)
 P.forEach(p=>{
   const rt=TMAP_ROUTES[p.n];
   p.straight=hav(OFFICE,p);
@@ -358,13 +361,32 @@ function matchCat(p){
   return q.split(/\s+/).filter(Boolean).every(t=>hay.includes(t));
 }
 function applyFilter(){
-  let shown=0,us=0;
-  P.forEach(p=>{ const ok=matchCat(p);
-    if(ok){p._ov.setMap(map);shown++;if(p.us)us++;} else p._ov.setMap(null);
+  let shown=0,us=0,dim=0;
+  P.forEach(p=>{
+    const catOk=matchCat(p);
+    if(!catOk){ p._ov.setMap(null); return; }
+    if(!timeFilter){ p._ov.setMap(map); p._ov.getContent().classList.remove('pin-dim'); shown++; if(p.us)us++; return; }
+    // 시간 필터: 기준 이내=선명, 기준+2분까지=흐림(경계), 그 밖=숨김
+    if(p.walk<=timeFilter){ p._ov.setMap(map); p._ov.getContent().classList.remove('pin-dim'); shown++; if(p.us)us++; }
+    else if(p.walk<=timeFilter+2){ p._ov.setMap(map); p._ov.getContent().classList.add('pin-dim'); dim++; }
+    else{ p._ov.setMap(null); }
   });
-  document.getElementById('count').innerHTML=q?`"${q}" ${shown}곳`:`${shown}곳 · <b>US ${us}</b>`;
+  document.getElementById('count').innerHTML = q ? `"${q}" ${shown}곳`
+    : timeFilter ? `도보 ${timeFilter}분 이내 ${shown}곳 · <span style="color:var(--sub)">경계 ${dim}곳</span>`
+    : `${shown}곳 · <b>US ${us}</b>`;
+  drawTimeRings();
   setTimeout(bindOverlayClicks,50);
 }
+function drawTimeRings(){
+  if(timeRingCircles){ timeRingCircles.forEach(c=>c.setMap(null)); timeRingCircles=null; }
+  if(!timeFilter) return;
+  const radius = timeFilter===5 ? 335 : 670; // 도보 4km/h 기준 근사 직선반경(참고용, 실제 판정은 TMAP 도보시간)
+  const circle=new kakao.maps.Circle({center:new kakao.maps.LatLng(OFFICE.lat,OFFICE.lng),
+    radius, strokeWeight:2, strokeColor:'#E8560F', strokeOpacity:.55, strokeStyle:'dash', fillColor:'#E8560F', fillOpacity:.05});
+  circle.setMap(map);
+  timeRingCircles=[circle];
+}
+let timeRingCircles=null;
 function bindOverlayClicks(){
   document.querySelectorAll('.pin').forEach(el=>{
     if(el._bound)return; el._bound=1;
@@ -378,6 +400,16 @@ function buildChips(){
     b.className='chip'+(c==='US인증'?' us':'')+(c==='US+예약가능'?' ctc':'')+(c==='전체'?' on':'');
     b.textContent=c==='US인증'?'🟢 US인증':c==='US+예약가능'?'🔵 US+예약가능':c;
     b.onclick=()=>{active=c;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
+    wrap.appendChild(b);});
+  buildTimeChips();
+}
+const TIME_OPTS=[{l:"전체 거리",v:0},{l:"🚶 5분 이내",v:5},{l:"🚶 10분 이내",v:10}];
+function buildTimeChips(){
+  const wrap=document.getElementById('timeChips');
+  TIME_OPTS.forEach(t=>{const b=document.createElement('button');
+    b.className='chip time'+(t.v===0?' on':'');
+    b.textContent=t.l;
+    b.onclick=()=>{timeFilter=t.v;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
     wrap.appendChild(b);});
 }
 function buildMarkers(){
