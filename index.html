@@ -44,6 +44,9 @@ h1 em{font-style:normal;color:var(--us)}
 .chip.ctc{color:var(--ct);border-color:#C4DEF7}.chip.ctc.on{background:var(--ct);border-color:var(--ct);color:#fff}
 .chip.time{color:var(--reg-deep);border-color:#F3C8AE}.chip.time.on{background:var(--reg);border-color:var(--reg);color:#fff}
 .pin-dim{opacity:.4;filter:grayscale(.3)}
+.pin-badge{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:3px;
+  background:var(--gold);color:#fff;font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:999px;
+  white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,.25);pointer-events:none}
 
 /* ── 본문: 데스크톱=좌우분할, 모바일=지도+바텀시트 ── */
 #body{position:relative;flex:1;min-width:0;display:flex;overflow:hidden}
@@ -253,7 +256,9 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
       <button class="modetab" data-mode="grid">🎯 보드</button>
     </div>
     <div class="roulette-sec" id="catStepSec">
-      <button class="usjumpbtn" id="usJumpBtn">🟢 US인증 맛집에서만 바로 돌리기</button>
+      <div class="label">도보 거리</div>
+      <div class="roulette-opts" id="rDistOpts"></div>
+      <button class="usjumpbtn" id="usJumpBtn" style="margin-top:12px">🟢 US인증 맛집에서만 바로 돌리기</button>
       <div class="label" style="margin-top:12px">카테고리별 인원 (합계 <span id="totalCount">0</span>명)</div>
       <div class="catcount-list" id="catCountList"></div>
     </div>
@@ -364,11 +369,19 @@ function applyFilter(){
   let shown=0,us=0,dim=0;
   P.forEach(p=>{
     const catOk=matchCat(p);
+    const wrap=p._ov.getContent();
+    const diamond=wrap.querySelector('.pin-diamond');
+    const badge=wrap.querySelector('.pin-badge');
     if(!catOk){ p._ov.setMap(null); return; }
-    if(!timeFilter){ p._ov.setMap(map); p._ov.getContent().classList.remove('pin-dim'); shown++; if(p.us)us++; return; }
-    // 시간 필터: 기준 이내=선명, 기준+2분까지=흐림(경계), 그 밖=숨김
-    if(p.walk<=timeFilter){ p._ov.setMap(map); p._ov.getContent().classList.remove('pin-dim'); shown++; if(p.us)us++; }
-    else if(p.walk<=timeFilter+2){ p._ov.setMap(map); p._ov.getContent().classList.add('pin-dim'); dim++; }
+    if(!timeFilter){ p._ov.setMap(map); diamond.classList.remove('pin-dim'); badge.style.display='none'; shown++; if(p.us)us++; return; }
+    // 시간 필터: 기준 이내=선명, 기준+2분까지=흐림(경계, "+N분" 배지)="경계", 그 밖=숨김
+    if(p.walk<=timeFilter){ p._ov.setMap(map); diamond.classList.remove('pin-dim'); badge.style.display='none'; shown++; if(p.us)us++; }
+    else if(p.walk<=timeFilter+2){
+      p._ov.setMap(map); diamond.classList.add('pin-dim');
+      const extra=p.walk-timeFilter;
+      badge.textContent=`+${extra}분만 더`; badge.style.display='block';
+      dim++;
+    }
     else{ p._ov.setMap(null); }
   });
   document.getElementById('count').innerHTML = q ? `"${q}" ${shown}곳`
@@ -388,7 +401,7 @@ function drawTimeRings(){
 }
 let timeRingCircles=null;
 function bindOverlayClicks(){
-  document.querySelectorAll('.pin').forEach(el=>{
+  document.querySelectorAll('.pin-wrap').forEach(el=>{
     if(el._bound)return; el._bound=1;
     el.addEventListener('click',ev=>{ev.stopPropagation();
       const idx=el.getAttribute('data-i'); if(idx!=null){window.__lastRSize=0; openPanel(P[+idx]);}});
@@ -416,11 +429,17 @@ function buildMarkers(){
   P.forEach((p,i)=>{
     const size=p.us?30:22, col=p.gold?'#0E8A4C':p.us?'#0E8A4C':'#F25C1F';
     const ring=p.gold?'border:3px solid #1E7BE0;box-shadow:0 0 0 2px #fff,0 0 8px 2px rgba(30,123,224,.7);':'border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.35);';
-    const el=document.createElement('div');
-    el.className='pin'; el.setAttribute('data-i',i);
-    el.style.cssText=`width:${size}px;height:${size}px;background:${col};${ring}border-radius:50% 50% 50% 4px;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;cursor:pointer`;
-    el.innerHTML=`<span style="transform:rotate(45deg);color:#fff;font-weight:900;font-size:9px">${p.us?'US':''}</span>`;
-    p._ov=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(p.lat,p.lng),content:el,yAnchor:1,zIndex:p.us?5:3});
+    const wrap=document.createElement('div');
+    wrap.className='pin-wrap'; wrap.setAttribute('data-i',i);
+    wrap.style.cssText='position:relative;cursor:pointer';
+    const diamond=document.createElement('div');
+    diamond.className='pin-diamond';
+    diamond.style.cssText=`width:${size}px;height:${size}px;background:${col};${ring}border-radius:50% 50% 50% 4px;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;transition:opacity .15s,filter .15s`;
+    diamond.innerHTML=`<span style="transform:rotate(45deg);color:#fff;font-weight:900;font-size:9px">${p.us?'US':''}</span>`;
+    const badge=document.createElement('div');
+    badge.className='pin-badge'; badge.style.display='none';
+    wrap.appendChild(diamond); wrap.appendChild(badge);
+    p._ov=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(p.lat,p.lng),content:wrap,yAnchor:1,zIndex:p.us?5:3});
   });
 }
 
@@ -512,8 +531,9 @@ function openPanel(p){
   const Le=panel.querySelector('#slinksExtra');
   const mk=(c,t,f)=>{const b=document.createElement('button');b.className=c;b.textContent=t;b.onclick=f;return b;};
   Lc.appendChild(mk('kakao','🚶 길찾기',()=>kakaoRoute(p)));
-  if(p.wait||p.ct===1){const lb=p.ct===1?'📱 캐치테이블 웨이팅':p.ct===-1?'캐치테이블(미입점)':'캐치테이블 검색';
+  if(p.ct!==-1){const lb=p.ct===1?'📱 캐치테이블 웨이팅':'캐치테이블 검색';
     Le.appendChild(mk('ctlink',lb,()=>window.open(p.ctUrl||p.ctSearch,'_blank','noopener')));}
+  else Le.appendChild(mk('ctlink','캐치테이블(미입점)',()=>window.open(p.ctSearch,'_blank','noopener')));
   Le.appendChild(mk('nvr','네이버 지도',()=>naverPlace(p)));
   if(!isDesktop()) Le.appendChild(mk('closebtn','닫기',closePanel));
   panel.classList.remove('expanded');
@@ -557,6 +577,7 @@ document.getElementById('fab').onclick=()=>{const pool=P.filter(matchCat);if(poo
 /* ── 룰렛 모달: 2단계 (카테고리 원판 → 가게 원판) ── */
 const RCATS_ALL=["한식","일식","중식","양식","아시안","고기","치킨·술집","카페·베이커리"];
 let catCounts={};        // {카테고리명: 인원수}
+let rDist=0;              // 룰렛 도보거리 필터: 0=전체, 5, 10(분)
 let rSize=0;             // 확정된 총 인원(=경고 로직용, 스테이지2 진입 시 총합으로 세팅)
 let stage=1;             // 1=카테고리 인원입력, 2=카테고리 원판, 3=가게 원판
 let stagePool=null;      // 스테이지3에서 쓸 가게 후보(당첨 카테고리로 필터된 P)
@@ -569,13 +590,19 @@ function buildCatStepper(){
   RCATS_ALL.forEach(c=>{
     const row=document.createElement('div'); row.className='catcount-row';
     const n=catCounts[c]||0;
-    row.innerHTML=`<span class="cname">${c}</span>
-      <button class="jumpbtn">바로 이걸로</button>
-      <div class="stepper"><button class="stepbtn" data-act="minus">−</button><span class="cnum">${n}</span><button class="stepbtn" data-act="plus">+</button></div>`;
+    const avail=distFilter(P.filter(p=>p.cat===c)).length;
+    const noStock=avail===0;
+    row.innerHTML=`<span class="cname">${c}${noStock?` <small style="color:var(--sub);font-weight:400">(도보 ${rDist}분 내 없음)</small>`:''}</span>
+      <button class="jumpbtn" ${noStock?'disabled style="opacity:.4;cursor:default"':''}>바로 이걸로</button>
+      <div class="stepper"><button class="stepbtn" data-act="minus" ${noStock?'disabled':''}>−</button><span class="cnum">${n}</span><button class="stepbtn" data-act="plus" ${noStock?'disabled':''}>+</button></div>`;
     row.classList.toggle('active', n>0);
-    row.querySelector('[data-act=minus]').onclick=()=>{ catCounts[c]=Math.max(0,(catCounts[c]||0)-1); buildCatStepper(); };
-    row.querySelector('[data-act=plus]').onclick=()=>{ catCounts[c]=(catCounts[c]||0)+1; buildCatStepper(); };
-    row.querySelector('.jumpbtn').onclick=()=>{ jumpToCategory(c); };
+    if(!noStock){
+      row.querySelector('[data-act=minus]').onclick=()=>{ catCounts[c]=Math.max(0,(catCounts[c]||0)-1); buildCatStepper(); };
+      row.querySelector('[data-act=plus]').onclick=()=>{ catCounts[c]=(catCounts[c]||0)+1; buildCatStepper(); };
+      row.querySelector('.jumpbtn').onclick=()=>{ jumpToCategory(c); };
+    } else {
+      catCounts[c]=0; // 거리 밖으로 밀려난 카테고리는 인원수 자동 초기화
+    }
     list.appendChild(row);
   });
   const total=Object.values(catCounts).reduce((a,b)=>a+b,0);
@@ -611,11 +638,25 @@ function resetResultArea(){
   gridZone.innerHTML='';
   rerollLine.style.display='none'; spinBtn.textContent='🎲 돌리기'; spinBtn.disabled=false; spinBtnMode='spin';
 }
+const RDIST_OPTS=[{l:"전체",v:0},{l:"🚶 5분 이내",v:5},{l:"🚶 10분 이내",v:10}];
+function buildDistOpts(){
+  const wrap=document.getElementById('rDistOpts'); wrap.innerHTML='';
+  RDIST_OPTS.forEach(d=>{const b=document.createElement('button');
+    b.className='ropt'+(d.v===rDist?' on':'');
+    b.textContent=d.l;
+    b.onclick=()=>{rDist=d.v;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');buildCatStepper();};
+    wrap.appendChild(b);});
+}
+function distFilter(pool){
+  if(!rDist) return pool;
+  return pool.filter(p=>p.walk<=rDist);
+}
 function goStage1(){
   stage=1; catCounts={}; stagePool=null; pendingCatWinner=null; window.__finalWinner=null;
   catStepSec.style.display='block';
   stageLabel.classList.remove('on'); backStage.classList.remove('on');
   rDesc.textContent='먹고 싶은 카테고리마다 인원수를 넣어주세요 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 원판이 돌아갑니다';
+  buildDistOpts();
   buildCatStepper();
   setMode(rMode);
 }
@@ -822,12 +863,12 @@ function jumpToUS(){
 function jumpToPool(label, pool){
   pendingCatWinner = {n:label, __isCat:true};
   catStepSec.style.display='none';
-  advanceToStage3(pool);
+  advanceToStage3(distFilter(pool));
 }
 function advanceToStage3(presetPool){
   const winner = pendingCatWinner; if(!winner) return;
   stage=3;
-  stagePool = presetPool || P.filter(p=>p.cat===winner.n);
+  stagePool = presetPool || distFilter(P.filter(p=>p.cat===winner.n));
   backStage.classList.add('on');
   setMode(rMode); // 여기서 화면을 깨끗이 비우고 스테이지2용 안내로 교체 (사용자가 버튼을 누른 "직후"라 자연스러움)
   stageLabel.textContent=`STAGE 2 · "${winner.n}" 가게 뽑는 중`; stageLabel.classList.add('on');
