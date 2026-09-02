@@ -171,6 +171,15 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .slotcabinet::before{content:'WIN';position:absolute;left:50%;top:6px;transform:translateX(-50%);
   background:linear-gradient(155deg,#FCE07A,#C89320);color:#7A3C00;font-family:'Black Han Sans',sans-serif;
   font-size:1rem;letter-spacing:.12em;padding:3px 20px;border-radius:20px;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.6);border:2px solid #fff;z-index:2}
+.mini-reels{display:flex;gap:6px;margin-bottom:8px}
+.mini-slot{flex:1;height:38px;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,#0E0A06,#1C130C);
+  box-shadow:inset 0 3px 6px rgba(0,0,0,.7);border:2px solid #7A4A1E;display:flex;align-items:center;justify-content:center;position:relative}
+.mini-slot .mini-val{font-family:'Black Han Sans',sans-serif;font-size:.74rem;color:#5A4A38;transition:color .15s;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:92%;text-align:center}
+.mini-slot.locked{background:linear-gradient(180deg,#FBF6E8,#F0E6CC)}
+.mini-slot.locked .mini-val{color:#20180E;font-weight:800}
+.mini-slot.spinning .mini-val{animation:miniSpin .12s linear infinite}
+@keyframes miniSpin{0%{transform:translateY(-6px);opacity:.4}50%{transform:translateY(0);opacity:1}100%{transform:translateY(6px);opacity:.4}}
 .reelwindow{position:relative;display:flex;gap:6px;height:96px;border-radius:12px;overflow:hidden;padding:6px;
   background:linear-gradient(180deg,#0E0A06,#1C130C);box-shadow:inset 0 4px 10px rgba(0,0,0,.8),inset 0 -4px 8px rgba(0,0,0,.6);
   border:3px solid #7A4A1E}
@@ -321,7 +330,12 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
       <div class="roulette-opts" id="rSizeOpts"></div>
     </div>
     <div class="slotcabinet" id="slotCabinet">
-      <div class="reelwindow" id="spinZone"><div class="center-line"></div><div class="slot-idle">레버를 당겨 돌려보세요</div></div>
+      <div class="mini-reels" id="miniReels">
+        <div class="mini-slot" data-slot="cat"><div class="mini-val">?</div></div>
+        <div class="mini-slot" data-slot="price"><div class="mini-val">?</div></div>
+        <div class="mini-slot" data-slot="dist"><div class="mini-val">?</div></div>
+      </div>
+      <div class="reelwindow" id="spinZone"><div class="center-line"></div><div class="slot-idle">레버를 당겨 완전 랜덤으로 뽑아보세요</div></div>
       <div class="lamp-row"><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span></div>
       <div class="slotlever" id="slotLever"><div class="rail"></div><div class="arm"></div><div class="knob"></div></div>
     </div>
@@ -793,15 +807,27 @@ function setMode(m){
   wheelZone.classList.toggle('on',m==='wheel');
   wheelResult.style.display = m==='wheel'?'flex':'none';
   document.getElementById('boardTrack').classList.toggle('on',m==='grid');
+  // 슬롯 모드는 완전 자동 랜덤이라 카테고리/가격/핀 수동 선택 UI 자체가 불필요
+  catStepSec.style.display = m==='slot'?'none':'block';
+  rDesc.textContent = m==='slot'
+    ? '레버를 당기면 카테고리·가격대·거리까지 전부 랜덤으로 뽑아서 가게를 정해드려요'
+    : '먹고 싶은 카테고리마다 인원수를 넣어주세요 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 원판이 돌아갑니다';
+  stageLabel.classList.remove('on'); backStage.classList.remove('on');
   resetResultArea();
+  if(m==='slot'){ spinBtn.style.display='none'; }
+  else{ spinBtn.style.display='block'; }
 }
 document.getElementById('modeTabs').addEventListener('click',e=>{
   const b=e.target.closest('.modetab'); if(!b||spinning) return; setMode(b.dataset.mode);
 });
 function resetResultArea(){
-  spinZone.innerHTML='<div class="center-line"></div><div class="slot-idle">버튼을 눌러 돌려보세요</div>';
+  spinZone.innerHTML='<div class="center-line"></div><div class="slot-idle">레버를 당겨 완전 랜덤으로 뽑아보세요</div>';
   wheelResult.innerHTML=''; wheelSvg.style.transition='none'; wheelSvg.style.transform='rotate(0deg)';
   document.getElementById('boardTrack').innerHTML='<div class="board-center"><div class="btitle" style="font-size:.85rem">버튼을 눌러<br>돌려보세요</div></div>';
+  document.querySelectorAll('.mini-slot').forEach(el=>{
+    el.classList.remove('locked','spinning');
+    el.querySelector('.mini-val').textContent='?';
+  });
   rerollLine.style.display='none'; spinBtn.textContent='🎲 돌리기'; spinBtn.disabled=false; spinBtnMode='spin';
 }
 const RDIST_OPTS=[{l:"전체",v:0},{l:"🚶 5분 이내",v:5},{l:"🚶 10분 이내",v:10}];
@@ -861,66 +887,104 @@ function doSpin(){
   } else { // stage===3 (가게 뽑기)
     pool=stagePool;
     if(!pool.length){
-      if(rMode==='slot') spinZone.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요</div>';
-      else if(rMode==='wheel') wheelResult.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요</div>';
+      if(rMode==='wheel') wheelResult.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요</div>';
       else document.querySelector('#boardTrack .board-center').innerHTML='<div class="btitle" style="font-size:.85rem">이 카테고리엔<br>등록된 가게가 없어요</div>';
       return;
     }
   }
-  if(rMode==='slot') spinSlot(pool);
-  else if(rMode==='wheel') spinWheel(pool);
+  if(rMode==='wheel') spinWheel(pool);
   else spinGrid(pool);
 }
 
 // ── 슬롯머신 ──
-function spinSlot(pool){
-  spinning=true; spinBtn.disabled=true; rerollLine.style.display='none'; spinBtn.onclick=null;
-  const CELL_H=32, REEL_N=3, VISIBLE=3; // 3릴, 릴마다 위/중앙/아래 3칸 보임(가운데가 결과선)
+function spinSlotAuto(){
+  spinning=true; spinBtn.disabled=true; slotLever.classList.add('pulled');
+  rerollLine.style.display='none';
+  const slots={cat:document.querySelector('[data-slot=cat] .mini-val'),
+    price:document.querySelector('[data-slot=price] .mini-val'),
+    dist:document.querySelector('[data-slot=dist] .mini-val')};
+  Object.values(slots).forEach(el=>{el.parentElement.classList.remove('locked'); el.parentElement.classList.add('spinning');});
+  spinZone.innerHTML='<div class="center-line"></div><div class="slot-idle">진행 중...</div>';
+
+  // 랜덤으로 뽑을 세 축: 카테고리, 가격대, 거리
+  const pickedCat = RCATS_ALL[Math.floor(Math.random()*RCATS_ALL.length)];
+  const priceOpts = RPRICE_ALL;
+  const pickedPrice = priceOpts[Math.floor(Math.random()*priceOpts.length)];
+  const distOpts=[{l:"거리 전체",v:0},{l:"도보 5분",v:5},{l:"도보 10분",v:10}];
+  const pickedDist = distOpts[Math.floor(Math.random()*distOpts.length)];
+
+  function lockMini(key,label,delay){
+    return new Promise(res=>{
+      setTimeout(()=>{
+        const el=slots[key];
+        el.parentElement.classList.remove('spinning');
+        el.parentElement.classList.add('locked');
+        el.textContent=label;
+        playLeverPull(); // "차캉"
+        res();
+      },delay);
+    });
+  }
+
+  (async()=>{
+    await lockMini('cat', pickedCat, 550);
+    await lockMini('price', pickedPrice.label, 1000);
+    await lockMini('dist', pickedDist.l, 900);
+
+    // 조건에 맞는 후보 찾기 - 안 되면 순서대로 완화(거리→가격→카테고리 유지)
+    let pool = P.filter(p=>p.cat===pickedCat && (p.tier||[]).includes(pickedPrice.key) && (!pickedDist.v || p.walk<=pickedDist.v));
+    let relaxNote='';
+    if(!pool.length){
+      pool = P.filter(p=>p.cat===pickedCat && (p.tier||[]).includes(pickedPrice.key));
+      relaxNote = pickedDist.v?' (거리 조건은 맞는 곳이 없어 해제)':'';
+    }
+    if(!pool.length){
+      pool = P.filter(p=>p.cat===pickedCat);
+      relaxNote = ' (가격 조건은 맞는 곳이 없어 해제)';
+    }
+    if(!pool.length){ pool = P; relaxNote=' (조건에 맞는 곳이 없어 전체에서 뽑음)'; }
+
+    spinMainReel(pool, relaxNote);
+  })();
+}
+function spinMainReel(pool, relaxNote){
+  const CELL_H=32;
   const winner=pool[Math.floor(Math.random()*pool.length)];
   spinZone.innerHTML='<div class="center-line"></div>';
-  const strips=[];
-  for(let r=0;r<REEL_N;r++){
-    const col=document.createElement('div'); col.className='reel-col';
-    const strip=document.createElement('div'); strip.className='reel-strip-v';
-    const total=18+r*4; // 릴마다 개수를 살짝 다르게 해서 회전 느낌 차등
-    const items=[];
-    for(let i=0;i<total-1;i++) items.push(pool[Math.floor(Math.random()*pool.length)]);
-    items.push(winner); // 마지막 칸 = 당첨(3릴 다 같은 당첨자로 정렬 -> "정렬됨" 연출)
-    items.forEach(p=>{
-      const cell=document.createElement('div'); cell.className='reel-cell';
-      cell.innerHTML=`<span class="nm">${p.n}</span>`;
-      strip.appendChild(cell);
-    });
-    col.appendChild(strip); spinZone.appendChild(col);
-    strips.push({strip,total});
-  }
+  const col=document.createElement('div'); col.className='reel-col'; col.style.flex='1 1 100%';
+  const strip=document.createElement('div'); strip.className='reel-strip-v';
+  const total=26;
+  const items=[];
+  for(let i=0;i<total-1;i++) items.push(pool[Math.floor(Math.random()*pool.length)]);
+  items.push(winner);
+  items.forEach(p=>{
+    const cell=document.createElement('div'); cell.className='reel-cell';
+    cell.innerHTML=`<span class="nm">${p.n}</span>`;
+    strip.appendChild(cell);
+  });
+  col.appendChild(strip); spinZone.appendChild(col);
   const windowH = spinZone.clientHeight || 96;
-  strips.forEach(({strip,total})=>{
-    const finalOffset = (total-1)*CELL_H + CELL_H/2 - windowH/2;
-    strip.style.transition='none'; strip.style.transform='translateY(0px)';
-    void strip.offsetWidth;
-    const overshoot = finalOffset + CELL_H*1.4;
-    strip.style.transition='transform 1.8s cubic-bezier(.1,.55,.2,1)';
-    strip.style.transform=`translateY(-${overshoot}px)`;
-    strip._finalOffset=finalOffset;
-  });
-  let tickCount=0; const tickTimer=setInterval(()=>{ playTick(); tickCount++; if(tickCount>=26) clearInterval(tickTimer); },70);
-  // 릴마다 순차적으로(왼→오) 딱 멈추는 느낌: 각기 다른 시점에 되돌아와 안착
-  strips.forEach(({strip},i)=>{
-    setTimeout(()=>{
-      strip.style.transition='transform .35s cubic-bezier(.34,1.56,.64,1)';
-      strip.style.transform=`translateY(-${strip._finalOffset}px)`;
-      playTick();
-    },1850+i*260);
-  });
+  const finalOffset = (total-1)*CELL_H + CELL_H/2 - windowH/2;
+  strip.style.transition='none'; strip.style.transform='translateY(0px)';
+  void strip.offsetWidth;
+  const overshoot = finalOffset + CELL_H*1.6;
+  strip.style.transition='transform 2.3s cubic-bezier(.08,.5,.15,1)'; // 마지막 릴이 제일 길고 천천히 감속 = 긴장감
+  strip.style.transform=`translateY(-${overshoot}px)`;
+  let tickCount=0; const tickTimer=setInterval(()=>{ playTick(); tickCount++; if(tickCount>=32) clearInterval(tickTimer); },70);
   spinTimer=setTimeout(()=>{
-    clearInterval(tickTimer);
-    spinning=false; spinBtn.disabled=false;
-    slotLever.classList.remove('pulled');
-    celebrateWinner();
-    playWinChime();
-    finishSpin(winner);
-  },1850+ (REEL_N-1)*260 + 400);
+    strip.style.transition='transform .4s cubic-bezier(.34,1.56,.64,1)';
+    strip.style.transform=`translateY(-${finalOffset}px)`;
+    playLeverPull(); // 마지막 "차캉"
+    spinTimer=setTimeout(()=>{
+      clearInterval(tickTimer);
+      spinning=false; spinBtn.disabled=false;
+      slotLever.classList.remove('pulled');
+      celebrateWinner();
+      playWinChime();
+      if(relaxNote) winner.__relaxNote=relaxNote;
+      finishSpin(winner);
+    },420);
+  },2350);
 }
 
 // ── 원판(휠) 룰렛: 빠르게 돌다 서서히 감속 ──
@@ -1060,7 +1124,8 @@ function finishSpin(winner){
     else document.querySelector('#boardTrack .board-center').appendChild(box);
   }
   spinBtn.disabled=false;
-  spinBtn.textContent='결정! 지도에서 보기';
+  spinBtn.style.display='block';
+  spinBtn.textContent= winner.__relaxNote ? `결정! 지도에서 보기${winner.__relaxNote}` : '결정! 지도에서 보기';
   spinBtnMode='confirm';
 }
 function jumpToCategory(catName){
@@ -1103,12 +1168,10 @@ document.getElementById('spinBtn').addEventListener('click',()=>{
 const slotLever=document.getElementById('slotLever');
 slotLever.addEventListener('click',()=>{
   if(rMode!=='slot' || spinning || clickLocked) return;
-  if(spinBtnMode!=='spin') return; // 카테고리 원판 등 다른 스테이지에선 레버 비활성
-  slotLever.classList.add('pulled');
   playLeverPull();
-  setTimeout(()=>{ doSpin(); },150);
+  setTimeout(()=>{ spinSlotAuto(); },150);
 });
-document.getElementById('rerollBtn').onclick=doSpin;
+document.getElementById('rerollBtn').onclick=()=>{ if(rMode==='slot') spinSlotAuto(); else doSpin(); };
 
 /* SDK 로드 타임아웃 */
 setTimeout(()=>{if(!window.kakao||!kakao.maps||!map)initKakao();},300);
