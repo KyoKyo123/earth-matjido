@@ -22,7 +22,13 @@ html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;color:var(
 #app{display:flex;flex-direction:column;height:100dvh}
 
 /* ── 헤더 ── */
-header{padding:11px 14px 8px;background:var(--paper);box-shadow:0 1px 0 var(--line);z-index:20}
+header{padding:11px 14px 8px;background:var(--paper);box-shadow:0 1px 0 var(--line);z-index:20;
+  max-height:600px;overflow:hidden;transition:max-height .25s ease,padding .25s ease}
+header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none}
+.hdrtoggle{position:absolute;top:9px;right:10px;z-index:15;border:1.5px solid var(--line);background:var(--surface);
+  color:var(--sub);width:30px;height:30px;border-radius:50%;font-size:.8rem;cursor:pointer;box-shadow:var(--sh-1);
+  transition:transform .25s ease}
+.hdrtoggle.up{transform:rotate(180deg)}
 .titlerow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 h1{font-family:'Black Han Sans',sans-serif;font-size:1.2rem;letter-spacing:-.2px;color:var(--ink)}
 h1 em{font-style:normal;color:var(--us)}
@@ -187,7 +193,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .mini-reels{display:flex;gap:6px;margin-bottom:8px}
 .mini-slot{flex:1;height:38px;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,#0E0A06,#1C130C);
   box-shadow:inset 0 3px 6px rgba(0,0,0,.7);border:2px solid #7A4A1E;display:flex;align-items:center;justify-content:center;position:relative}
-.mini-slot .mini-val{font-family:'Black Han Sans',sans-serif;font-size:.74rem;color:#5A4A38;transition:color .15s;
+.mini-slot .mini-val{display:block;font-family:'Black Han Sans',sans-serif;font-size:.74rem;color:#5A4A38;transition:color .15s;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:92%;text-align:center}
 .mini-slot.locked{background:linear-gradient(180deg,#FBF6E8,#F0E6CC)}
 .mini-slot.locked .mini-val{color:#20180E;font-weight:800}
@@ -205,8 +211,8 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .reel-strip-v{position:absolute;left:0;right:0;top:0;display:flex;flex-direction:column;transform:translateY(0)}
 .reel-cell{flex:0 0 34px;height:34px;display:flex;align-items:center;justify-content:center;text-align:center;
   border-bottom:1px solid #EEE;background:#fff;padding:0 4px}
-.reel-cell .nm{font-family:'Black Han Sans',sans-serif;font-size:.66rem;color:#20180E;line-height:1.15;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:98%}
+.reel-cell .nm{display:inline-block;font-family:'Black Han Sans',sans-serif;font-size:.66rem;color:#20180E;line-height:1.15;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:98%;vertical-align:middle}
 /* 메인(최종 결과) 릴은 폭이 넓어서 글자를 훨씬 크게 */
 .reel-col.main-reel .reel-cell{flex-basis:34px;height:34px}
 .reel-col.main-reel .reel-cell .nm{font-size:.92rem;max-width:96%}
@@ -307,6 +313,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
   <div id="panel"></div>
   <div id="map">
     <div class="count" id="count"></div>
+    <button class="hdrtoggle" id="hdrToggle" title="검색·룰렛 배너 접기/펼치기">▲</button>
     <div class="loaderr" id="loaderr"></div>
   </div>
 </div>
@@ -753,6 +760,13 @@ function kakaoRoute(p){
 function naverPlace(p){window.open(`https://map.naver.com/p/search/${encodeURIComponent(p.n+' 합정')}`,'_blank','noopener');}
 
 /* ── 검색 ── */
+document.getElementById('hdrToggle').onclick=function(){
+  const hdr=document.querySelector('header');
+  const collapsed=hdr.classList.toggle('collapsed');
+  this.classList.toggle('up',collapsed);
+  this.textContent = collapsed?'▼':'▲';
+  setTimeout(()=>{ if(map) kakao.maps.event.trigger(map,'resize'); },260);
+};
 const qi=document.getElementById('q'),qc=document.getElementById('qclr');
 qi.addEventListener('input',()=>{q=qi.value.trim().toLowerCase();qc.classList.toggle('on',!!q);closePanel();applyFilter();
   const pts=P.filter(matchCat); if(q&&pts.length){const b=new kakao.maps.LatLngBounds();pts.forEach(p=>b.extend(new kakao.maps.LatLng(p.lat,p.lng)));map.setBounds(b);}});
@@ -1046,7 +1060,16 @@ function spinMainReel(pool, relaxNote){
   const strip=document.createElement('div'); strip.className='reel-strip-v';
   const total=26;
   const items=[];
-  for(let i=0;i<total-1;i++) items.push(pool[Math.floor(Math.random()*pool.length)]);
+  let prev=null;
+  for(let i=0;i<total-1;i++){
+    let pick;
+    // 바로 앞 칸과 같은 이름이 연달아 나오면 다시 뽑아서(최대 5회 시도) 긴장감 있게 다양한 글자가 지나가도록
+    for(let tries=0; tries<5; tries++){
+      pick = pool[Math.floor(Math.random()*pool.length)];
+      if(pool.length<=1 || pick.n!==prev) break;
+    }
+    items.push(pick); prev=pick.n;
+  }
   items.push(winner);
   items.forEach(p=>{
     const cell=document.createElement('div'); cell.className='reel-cell';
@@ -1189,7 +1212,8 @@ function advanceToStage3(presetPool){
   stage=3;
   stagePool = presetPool || distFilter(P.filter(p=>p.cat===winner.n));
   backStage.classList.add('on');
-  setMode(rMode); // 여기서 화면을 깨끗이 비우고 스테이지2용 안내로 교체 (사용자가 버튼을 누른 "직후"라 자연스러움)
+  catStepSec.style.display='none'; // 스테이지1 스테퍼는 계속 숨긴 채로 - 다시 보이면 레이아웃이 커져서 화면이 튐
+  resetResultArea(); // 릴/원판만 초기화, catStepSec은 건드리지 않음
   stageLabel.textContent=`STAGE 2 · "${winner.n}" 가게 뽑는 중`; stageLabel.classList.add('on');
   rDesc.textContent=`"${winner.n}" 안에서 어디로 갈지 뽑아보세요`;
   spinBtn.textContent='🎲 가게 뽑기';
