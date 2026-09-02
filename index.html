@@ -186,14 +186,17 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .reelwindow::before,.reelwindow::after{content:'';position:absolute;left:0;right:0;height:22px;z-index:5;pointer-events:none}
 .reelwindow::before{top:0;background:linear-gradient(#0E0A06,rgba(14,10,6,0))}
 .reelwindow::after{bottom:0;background:linear-gradient(rgba(14,10,6,0),#0E0A06)}
-.reelwindow .center-line{position:absolute;left:6px;right:6px;top:50%;transform:translateY(-50%);height:2px;
-  background:rgba(255,215,80,.55);z-index:6;pointer-events:none}
+.reelwindow .result-frame{position:absolute;left:4px;right:4px;top:50%;transform:translateY(-50%);height:34px;
+  border:2px solid rgba(255,215,80,.85);border-radius:8px;z-index:6;pointer-events:none;box-shadow:0 0 8px rgba(255,215,80,.35)}
 .reel-col{position:relative;flex:1;height:100%;overflow:hidden;border-radius:8px;background:#fff}
 .reel-strip-v{position:absolute;left:0;right:0;top:0;display:flex;flex-direction:column;transform:translateY(0)}
-.reel-cell{flex:0 0 32px;height:32px;display:flex;align-items:center;justify-content:center;text-align:center;
-  border-bottom:1px solid #EEE;background:#fff;padding:0 3px}
-.reel-cell .nm{font-family:'Black Han Sans',sans-serif;font-size:.62rem;color:#20180E;line-height:1.1;
+.reel-cell{flex:0 0 34px;height:34px;display:flex;align-items:center;justify-content:center;text-align:center;
+  border-bottom:1px solid #EEE;background:#fff;padding:0 4px}
+.reel-cell .nm{font-family:'Black Han Sans',sans-serif;font-size:.66rem;color:#20180E;line-height:1.15;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:98%}
+/* 메인(최종 결과) 릴은 폭이 넓어서 글자를 훨씬 크게 */
+.reel-col.main-reel .reel-cell{flex-basis:34px;height:34px}
+.reel-col.main-reel .reel-cell .nm{font-size:.92rem;max-width:96%}
 .slot-idle{width:100%;text-align:center;font-size:.8rem;color:#C9A45F;font-weight:700;align-self:center}
 .slotcabinet .lamp-row{display:flex;justify-content:space-between;margin-top:10px;padding:0 4px}
 .slotcabinet .lamp{width:6px;height:6px;border-radius:50%;background:#FFE9A8;box-shadow:0 0 5px 1px rgba(255,233,168,.8);animation:lampBlink 1.1s infinite}
@@ -335,7 +338,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
         <div class="mini-slot" data-slot="price"><div class="mini-val">?</div></div>
         <div class="mini-slot" data-slot="dist"><div class="mini-val">?</div></div>
       </div>
-      <div class="reelwindow" id="spinZone"><div class="center-line"></div><div class="slot-idle">레버를 당겨 완전 랜덤으로 뽑아보세요</div></div>
+      <div class="reelwindow" id="spinZone"><div class="result-frame"></div><div class="slot-idle">레버를 당겨 완전 랜덤으로 뽑아보세요</div></div>
       <div class="lamp-row"><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span></div>
       <div class="slotlever" id="slotLever"><div class="rail"></div><div class="arm"></div><div class="knob"></div></div>
     </div>
@@ -697,7 +700,12 @@ const qi=document.getElementById('q'),qc=document.getElementById('qclr');
 qi.addEventListener('input',()=>{q=qi.value.trim().toLowerCase();qc.classList.toggle('on',!!q);closePanel();applyFilter();
   const pts=P.filter(matchCat); if(q&&pts.length){const b=new kakao.maps.LatLngBounds();pts.forEach(p=>b.extend(new kakao.maps.LatLng(p.lat,p.lng)));map.setBounds(b);}});
 qc.onclick=()=>{qi.value="";q="";qc.classList.remove('on');applyFilter();qi.focus();};
-document.getElementById('fab').onclick=()=>{const pool=P.filter(matchCat);if(pool.length){window.__lastRSize=0;openPanel(pool[Math.floor(Math.random()*pool.length)]);}};
+document.getElementById('fab').onclick=()=>{
+  // "아무거나" = 완전 자동 슬롯(카테고리·가격·거리까지 전부 랜덤)을 곧바로 보여줌
+  openDice();
+  setMode('slot');
+  setTimeout(()=>{ slotLever.click(); },250);
+};
 
 /* ── 룰렛 모달: 2단계 (카테고리/가격/특정가게 원판 → 가게 원판) ── */
 const RCATS_ALL=["한식","일식","중식","양식","아시안","고기","치킨·술집","카페·베이커리"];
@@ -821,7 +829,7 @@ document.getElementById('modeTabs').addEventListener('click',e=>{
   const b=e.target.closest('.modetab'); if(!b||spinning) return; setMode(b.dataset.mode);
 });
 function resetResultArea(){
-  spinZone.innerHTML='<div class="center-line"></div><div class="slot-idle">레버를 당겨 완전 랜덤으로 뽑아보세요</div>';
+  spinZone.innerHTML='<div class="result-frame"></div><div class="slot-idle">레버를 당겨 완전 랜덤으로 뽑아보세요</div>';
   wheelResult.innerHTML=''; wheelSvg.style.transition='none'; wheelSvg.style.transform='rotate(0deg)';
   document.getElementById('boardTrack').innerHTML='<div class="board-center"><div class="btitle" style="font-size:.85rem">버튼을 눌러<br>돌려보세요</div></div>';
   document.querySelectorAll('.mini-slot').forEach(el=>{
@@ -904,7 +912,7 @@ function spinSlotAuto(){
     price:document.querySelector('[data-slot=price] .mini-val'),
     dist:document.querySelector('[data-slot=dist] .mini-val')};
   Object.values(slots).forEach(el=>{el.parentElement.classList.remove('locked'); el.parentElement.classList.add('spinning');});
-  spinZone.innerHTML='<div class="center-line"></div><div class="slot-idle">진행 중...</div>';
+  spinZone.innerHTML='<div class="result-frame"></div><div class="slot-idle">진행 중...</div>';
 
   // 랜덤으로 뽑을 세 축: 카테고리, 가격대, 거리
   const pickedCat = RCATS_ALL[Math.floor(Math.random()*RCATS_ALL.length)];
@@ -947,11 +955,19 @@ function spinSlotAuto(){
     spinMainReel(pool, relaxNote);
   })();
 }
+let __lastSlotWinner=null;
 function spinMainReel(pool, relaxNote){
-  const CELL_H=32;
-  const winner=pool[Math.floor(Math.random()*pool.length)];
-  spinZone.innerHTML='<div class="center-line"></div>';
-  const col=document.createElement('div'); col.className='reel-col'; col.style.flex='1 1 100%';
+  const CELL_H=34;
+  // 후보가 2곳 이상이면 직전과 같은 가게는 최대한 피함(운 나쁘면 계속 같은 게 나오는 문제 방지)
+  let candidates=pool;
+  if(pool.length>1 && __lastSlotWinner){
+    const filtered=pool.filter(p=>p.n!==__lastSlotWinner);
+    if(filtered.length) candidates=filtered;
+  }
+  const winner=candidates[Math.floor(Math.random()*candidates.length)];
+  __lastSlotWinner=winner.n;
+  spinZone.innerHTML='<div class="result-frame"></div>';
+  const col=document.createElement('div'); col.className='reel-col main-reel'; col.style.flex='1 1 100%';
   const strip=document.createElement('div'); strip.className='reel-strip-v';
   const total=26;
   const items=[];
@@ -967,24 +983,19 @@ function spinMainReel(pool, relaxNote){
   const finalOffset = (total-1)*CELL_H + CELL_H/2 - windowH/2;
   strip.style.transition='none'; strip.style.transform='translateY(0px)';
   void strip.offsetWidth;
-  const overshoot = finalOffset + CELL_H*1.6;
-  strip.style.transition='transform 2.3s cubic-bezier(.08,.5,.15,1)'; // 마지막 릴이 제일 길고 천천히 감속 = 긴장감
-  strip.style.transform=`translateY(-${overshoot}px)`;
-  let tickCount=0; const tickTimer=setInterval(()=>{ playTick(); tickCount++; if(tickCount>=32) clearInterval(tickTimer); },70);
+  // 오버슈트(더 갔다 되돌아옴) 없이 단방향으로만 감속해서 정확히 멈춤 - "다시 돌아가서 글자 안 보임" 방지
+  strip.style.transition='transform 2.5s cubic-bezier(.15,.65,.2,1)';
+  strip.style.transform=`translateY(-${finalOffset}px)`;
+  let tickCount=0; const tickTimer=setInterval(()=>{ playTick(); tickCount++; if(tickCount>=34) clearInterval(tickTimer); },70);
   spinTimer=setTimeout(()=>{
-    strip.style.transition='transform .4s cubic-bezier(.34,1.56,.64,1)';
-    strip.style.transform=`translateY(-${finalOffset}px)`;
-    playLeverPull(); // 마지막 "차캉"
-    spinTimer=setTimeout(()=>{
-      clearInterval(tickTimer);
-      spinning=false; spinBtn.disabled=false;
-      slotLever.classList.remove('pulled');
-      celebrateWinner();
-      playWinChime();
-      if(relaxNote) winner.__relaxNote=relaxNote;
-      finishSpin(winner);
-    },420);
-  },2350);
+    clearInterval(tickTimer);
+    spinning=false; spinBtn.disabled=false;
+    slotLever.classList.remove('pulled');
+    celebrateWinner();
+    playWinChime();
+    if(relaxNote) winner.__relaxNote=relaxNote;
+    finishSpin(winner);
+  },2550);
 }
 
 // ── 원판(휠) 룰렛: 빠르게 돌다 서서히 감속 ──
