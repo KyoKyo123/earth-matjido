@@ -25,10 +25,13 @@ html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;color:var(
 header{padding:11px 14px 8px;background:var(--paper);box-shadow:0 1px 0 var(--line);z-index:20;
   max-height:600px;overflow:hidden;transition:max-height .25s ease,padding .25s ease}
 header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none}
-.hdrtoggle{position:absolute;top:9px;right:10px;z-index:15;border:1.5px solid var(--line);background:var(--surface);
-  color:var(--sub);width:30px;height:30px;border-radius:50%;font-size:.8rem;cursor:pointer;box-shadow:var(--sh-1);
-  transition:transform .25s ease}
-.hdrtoggle.up{transform:rotate(180deg)}
+.hdrtoggle{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:16;
+  border:none;border-radius:0 0 14px 14px;background:var(--ink);color:#fff;
+  padding:6px 18px 8px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25);
+  display:flex;align-items:center;gap:6px;font:inherit;font-size:.74rem;font-weight:700}
+.hdrtoggle .htxt{white-space:nowrap}
+.hdrtoggle .harrow{font-size:.7rem;transition:transform .25s ease}
+.hdrtoggle.up .harrow{transform:rotate(180deg)}
 .titlerow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 h1{font-family:'Black Han Sans',sans-serif;font-size:1.2rem;letter-spacing:-.2px;color:var(--ink)}
 h1 em{font-style:normal;color:var(--us)}
@@ -314,7 +317,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
   <div id="panel"></div>
   <div id="map">
     <div class="count" id="count"></div>
-    <button class="hdrtoggle" id="hdrToggle" title="검색·룰렛 배너 접기/펼치기">▲</button>
+    <button class="hdrtoggle" id="hdrToggle" title="검색·룰렛 배너 접기/펼치기"><span class="htxt">검색·룰렛 접기</span><span class="harrow">▲</span></button>
     <div class="loaderr" id="loaderr"></div>
   </div>
 </div>
@@ -765,8 +768,13 @@ document.getElementById('hdrToggle').onclick=function(){
   const hdr=document.querySelector('header');
   const collapsed=hdr.classList.toggle('collapsed');
   this.classList.toggle('up',collapsed);
-  this.textContent = collapsed?'▼':'▲';
-  setTimeout(()=>{ if(map) kakao.maps.event.trigger(map,'resize'); },260);
+  this.querySelector('.htxt').textContent = collapsed? '지도 넓게 보기 해제':'검색·룰렛 접기';
+  // 헤더 높이 변화 애니메이션(.25s) 동안 지도 컨테이너 크기가 계속 바뀌므로,
+  // 중간에도 여러 번 리사이즈를 걸어줘야 카카오맵이 타일 깨짐 없이 따라옴
+  const kick=()=>{ if(map) kakao.maps.event.trigger(map,'resize'); };
+  requestAnimationFrame(kick);
+  [60,130,200,280,340].forEach(t=>setTimeout(kick,t));
+  hdr.addEventListener('transitionend',kick,{once:true});
 };
 const qi=document.getElementById('q'),qc=document.getElementById('qclr');
 qi.addEventListener('input',()=>{q=qi.value.trim().toLowerCase();qc.classList.toggle('on',!!q);closePanel();applyFilter();
