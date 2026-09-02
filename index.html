@@ -149,6 +149,11 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .catcount-row .jumpbtn{border:1.5px solid var(--ct);background:var(--surface);color:var(--ct);border-radius:8px;
   font:inherit;font-size:.68rem;font-weight:800;padding:6px 10px;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s}
 .catcount-row .jumpbtn:active{background:var(--ct);color:#fff}
+.searchpin-row{display:flex;gap:7px;margin-bottom:8px}
+.searchpin-row input{flex:1;font:inherit;font-size:.84rem;padding:9px 11px;border-radius:var(--r-md);border:1.5px solid var(--line);background:var(--surface);outline:none}
+.searchpin-row input:focus{border-color:var(--reg)}
+.searchpin-row button{border:none;background:var(--ink);color:#fff;font:inherit;font-weight:700;font-size:.82rem;padding:0 16px;border-radius:var(--r-md);cursor:pointer}
+.pin-suggest{font-size:.76rem;color:var(--sub);margin:-4px 0 8px;padding:0 2px}
 .usjumpbtn{width:100%;border:1.5px solid var(--us);background:var(--us-bg);color:#0A6B3A;
   border-radius:var(--r-md);padding:12px;font:inherit;font-size:.85rem;font-weight:800;cursor:pointer;transition:background .12s,color .12s}
 .usjumpbtn:active{background:var(--us);color:#fff}
@@ -159,16 +164,32 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .ropt{border:1.5px solid var(--line);background:var(--surface);color:var(--sub);border-radius:var(--r-md);padding:9px 13px;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer}
 .ropt.on{background:var(--ink);border-color:var(--ink);color:#fff}
 
-/* 슬롯머신: 아케이드 릴 창 느낌 - 안으로 파인 프레임 */
-.spinzone{position:relative;height:150px;display:flex;align-items:center;justify-content:center;margin:11px 0 15px;
-  background:#221C13;border-radius:var(--r-lg);overflow:hidden;
-  box-shadow:inset 0 3px 10px rgba(0,0,0,.55),inset 0 -3px 8px rgba(0,0,0,.4),0 1px 0 rgba(255,255,255,.04)}
-.spinzone::before,.spinzone::after{content:'';position:absolute;left:0;right:0;height:34px;z-index:2;pointer-events:none}
-.spinzone::before{top:0;background:linear-gradient(#221C13,rgba(34,28,19,0))}
-.spinzone::after{bottom:0;background:linear-gradient(rgba(34,28,19,0),#221C13)}
-.spin-card{text-align:center;transition:opacity .08s}
-.spin-card .nm{font-family:'Black Han Sans',sans-serif;font-size:1.35rem;color:#FBF6EA;line-height:1.3}
-.spin-card .ct{font-size:.78rem;color:#B8AC94;margin-top:4px}
+/* 슬롯머신: 카지노 캐비닛 룩(빨강·금테) + 가로로 긴 릴 스트립 */
+.slotcabinet{position:relative;border-radius:26px 26px 16px 16px;padding:16px 16px 14px;margin:11px 0 15px;
+  background:linear-gradient(165deg,#C4291A,#8E1710);box-shadow:0 3px 0 #6E1109,0 8px 20px rgba(0,0,0,.35);
+  border:3px solid #E8B23C}
+.slotcabinet::before{content:'WIN';position:absolute;left:50%;top:-15px;transform:translateX(-50%);
+  background:linear-gradient(155deg,#F4CE5A,#C89320);color:#7A3C00;font-family:'Black Han Sans',sans-serif;
+  font-size:1.05rem;letter-spacing:.1em;padding:4px 22px;border-radius:20px;box-shadow:0 3px 8px rgba(0,0,0,.35);border:2px solid #fff}
+.reelwindow{position:relative;height:74px;border-radius:12px;overflow:hidden;background:#150F0A;
+  box-shadow:inset 0 4px 10px rgba(0,0,0,.7),inset 0 -4px 8px rgba(0,0,0,.5)}
+.reelwindow::before,.reelwindow::after{content:'';position:absolute;top:0;bottom:0;width:26px;z-index:3;pointer-events:none}
+.reelwindow::before{left:0;background:linear-gradient(90deg,#150F0A,rgba(21,15,10,0))}
+.reelwindow::after{right:0;background:linear-gradient(270deg,#150F0A,rgba(21,15,10,0))}
+.reelwindow .center-line{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:2px;
+  background:rgba(255,215,80,.5);z-index:4;pointer-events:none}
+.reelstrip{position:absolute;top:0;left:0;height:100%;display:flex;align-items:center;white-space:nowrap;
+  transform:translateX(0)}
+.reel-item{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  width:150px;height:100%;flex:0 0 150px;border-right:2px dashed rgba(255,255,255,.08)}
+.reel-item .nm{font-family:'Black Han Sans',sans-serif;font-size:1.05rem;color:#FBF6EA;line-height:1.25;padding:0 8px;text-align:center;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
+.reel-item .ct{font-size:.68rem;color:#D9A94A;margin-top:2px}
+.slot-idle{width:100%;text-align:center;font-size:.85rem;color:#C9A45F;font-weight:700}
+.slotcabinet .lamp-row{display:flex;justify-content:space-between;margin-top:9px;padding:0 4px}
+.slotcabinet .lamp{width:6px;height:6px;border-radius:50%;background:#FFE9A8;box-shadow:0 0 5px 1px rgba(255,233,168,.8);animation:lampBlink 1.1s infinite}
+.slotcabinet .lamp:nth-child(even){animation-delay:.55s}
+@keyframes lampBlink{0%,100%{opacity:1}50%{opacity:.25}}
 .spin-idle{font-size:.85rem;color:#8A8070;font-weight:700}
 .groupwarn{color:#7A2B22}
 
@@ -197,14 +218,27 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .wheel-result .nm{font-family:'Black Han Sans',sans-serif;font-size:1.2rem;color:var(--ink)}
 .wheel-result .ct{font-size:.76rem;color:var(--sub);margin-top:3px}
 
-/* 그리드 보드: 빈칸 없이 완전히 꽉 채워지는 레이아웃 (중앙 고정칸 제거) */
+/* 그리드 보드(구버전, 이제 안 씀 - boardtrack으로 대체) */
 .gridzone{display:none;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 8px}
 .gridzone.on{display:grid}
-.grid-caption{display:none;text-align:center;font-size:.72rem;font-weight:800;color:var(--sub);letter-spacing:.04em;margin:2px 0 12px}
-.grid-caption.on{display:block}
 .gcell{aspect-ratio:1;border-radius:var(--r-sm);background:var(--line-soft);display:flex;align-items:center;justify-content:center;
   text-align:center;font-size:.66rem;font-weight:700;color:var(--sub-deep);padding:4px;line-height:1.25;transition:background .08s,color .08s,transform .08s}
 .gcell.lit{background:var(--reg);color:#fff;transform:scale(1.1);box-shadow:0 4px 12px rgba(232,86,15,.45)}
+
+/* 보드 트랙: 부루마블처럼 정사각형 둘레를 도는 칸 + 중앙 로고 + 말(토큰) */
+.boardtrack{display:none;position:relative;width:100%;aspect-ratio:1;margin:8px 0 8px;
+  background:linear-gradient(160deg,#3E7D4C,#2E5E3A);border-radius:var(--r-lg);padding:10px;
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.15),var(--sh-2)}
+.boardtrack.on{display:block}
+.board-center{position:absolute;left:14%;top:14%;right:14%;bottom:14%;background:#F4EEDD;border-radius:var(--r-md);
+  display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.08)}
+.board-center .btitle{font-family:'Black Han Sans',sans-serif;font-size:1.15rem;color:var(--ink);line-height:1.35}
+.bcell{position:absolute;width:15%;aspect-ratio:1;border-radius:8px;background:#FBF6E8;
+  display:flex;align-items:center;justify-content:center;text-align:center;font-size:.56rem;font-weight:800;color:var(--sub-deep);
+  padding:3px;line-height:1.15;box-shadow:0 2px 4px rgba(0,0,0,.18);transition:background .1s,color .1s,transform .1s;overflow:hidden}
+.bcell.lit{background:var(--gold);color:#fff;transform:scale(1.22);z-index:5;box-shadow:0 0 0 3px #fff,0 4px 14px rgba(200,148,10,.6)}
+.bcell.corner{background:#FFE9B0}
 
 /* 승리 연출: CTA(주황)와 구분되는 골드톤. 명확히 한 순간에만 등장 */
 .bang-overlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;pointer-events:none}
@@ -261,24 +295,34 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
     <div class="roulette-sec" id="catStepSec">
       <div class="label">도보 거리</div>
       <div class="roulette-opts" id="rDistOpts"></div>
-      <div class="roulette-opts" id="rPriceOpts" style="margin-top:8px"></div>
       <button class="usjumpbtn" id="usJumpBtn" style="margin-top:12px">🟢 US인증 맛집에서만 바로 돌리기</button>
       <div class="label" style="margin-top:12px">카테고리별 인원 (합계 <span id="totalCount">0</span>명)</div>
       <div class="catcount-list" id="catCountList"></div>
+      <div class="label" style="margin-top:12px">가격대별 인원 (섞어서 같이 돌리기 가능)</div>
+      <div class="catcount-list" id="priceCountList"></div>
+      <div class="label" style="margin-top:12px">특정 가게 지정</div>
+      <div class="searchpin-row">
+        <input type="text" id="pinSearchInput" placeholder="가게 이름 검색">
+        <button id="pinAddBtn">추가</button>
+      </div>
+      <div id="pinSearchResult"></div>
+      <div class="catcount-list" id="pinCountList"></div>
     </div>
     <div class="roulette-sec" id="sizeSecOld" style="display:none">
       <div class="label">인원</div>
       <div class="roulette-opts" id="rSizeOpts"></div>
     </div>
-    <div class="spinzone" id="spinZone"><div class="spin-idle">버튼을 눌러 돌려보세요</div></div>
+    <div class="slotcabinet" id="slotCabinet">
+      <div class="reelwindow" id="spinZone"><div class="center-line"></div><div class="slot-idle">버튼을 눌러 돌려보세요</div></div>
+      <div class="lamp-row"><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span><span class="lamp"></span></div>
+    </div>
     <div class="wheelzone" id="wheelZone">
       <div class="wheel-ptr"></div>
       <svg class="wheel-svg" id="wheelSvg" viewBox="0 0 200 200"></svg>
       <div class="wheel-center">🍽️</div>
     </div>
     <div class="wheel-result" id="wheelResult" style="display:none"></div>
-    <div class="grid-caption" id="gridCaption">오늘의 점심 후보</div>
-    <div class="gridzone" id="gridZone"></div>
+    <div class="boardtrack" id="boardTrack"></div>
     <button class="spinbtn" id="spinBtn">🎲 돌리기</button>
     <div class="reroll-line" id="rerollLine" style="display:none">
       마음에 안 드시나요? <button id="rerollBtn">다시 돌리기</button>
@@ -462,6 +506,35 @@ function buildMarkers(){
 /* ── 패널(가게 상세) — 데스크톱=왼쪽 고정, 모바일=바텀시트 ── */
 const panel=document.getElementById('panel');
 const bodyEl=document.getElementById('body');
+/* ── 사운드: 외부 파일 없이 Web Audio API로 합성 ── */
+let audioCtx=null;
+function getAudioCtx(){
+  if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } }
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  return audioCtx;
+}
+function playTick(){
+  const ctx=getAudioCtx(); if(!ctx) return;
+  const o=ctx.createOscillator(), g=ctx.createGain();
+  o.type='square'; o.frequency.value=1400;
+  g.gain.setValueAtTime(.06, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime+.045);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime+.05);
+}
+function playWinChime(){
+  const ctx=getAudioCtx(); if(!ctx) return;
+  [880,1108,1318,1760].forEach((freq,i)=>{
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type='triangle'; o.frequency.value=freq;
+    const t0=ctx.currentTime+i*0.09;
+    g.gain.setValueAtTime(0,t0);
+    g.gain.linearRampToValueAtTime(.12,t0+.02);
+    g.gain.exponentialRampToValueAtTime(.001,t0+.32);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t0); o.stop(t0+.34);
+  });
+}
 function celebrateWinner(){
   const ov=document.createElement('div'); ov.className='bang-overlay';
   ov.innerHTML='<div class="bang-mark">❗</div>';
@@ -591,9 +664,12 @@ qi.addEventListener('input',()=>{q=qi.value.trim().toLowerCase();qc.classList.to
 qc.onclick=()=>{qi.value="";q="";qc.classList.remove('on');applyFilter();qi.focus();};
 document.getElementById('fab').onclick=()=>{const pool=P.filter(matchCat);if(pool.length){window.__lastRSize=0;openPanel(pool[Math.floor(Math.random()*pool.length)]);}};
 
-/* ── 룰렛 모달: 2단계 (카테고리 원판 → 가게 원판) ── */
+/* ── 룰렛 모달: 2단계 (카테고리/가격/특정가게 원판 → 가게 원판) ── */
 const RCATS_ALL=["한식","일식","중식","양식","아시안","고기","치킨·술집","카페·베이커리"];
+const RPRICE_ALL=[{key:1,label:"💚 싸다"},{key:2,label:"🍚 평균"},{key:3,label:"💸 비쌈"}];
 let catCounts={};        // {카테고리명: 인원수}
+let priceCounts={};      // {tier: 인원수}
+let pinCounts={};        // {가게이름: 인원수} - 특정 가게 지정(당첨되면 스테이지2 없이 바로 확정)
 let rDist=0;              // 룰렛 도보거리 필터: 0=전체, 5, 10(분)
 let rSize=0;             // 확정된 총 인원(=경고 로직용, 스테이지2 진입 시 총합으로 세팅)
 let stage=1;             // 1=카테고리 인원입력, 2=카테고리 원판, 3=가게 원판
@@ -622,37 +698,89 @@ function buildCatStepper(){
     }
     list.appendChild(row);
   });
-  const total=Object.values(catCounts).reduce((a,b)=>a+b,0);
+  buildPriceStepper();
+  buildPinStepper();
+  const total=Object.values(catCounts).reduce((a,b)=>a+b,0)
+    + Object.values(priceCounts).reduce((a,b)=>a+b,0)
+    + Object.values(pinCounts).reduce((a,b)=>a+b,0);
   document.getElementById('totalCount').textContent=total;
   spinBtn.disabled = total===0;
-  spinBtn.textContent = total===0 ? '카테고리에 인원을 넣어주세요' : '🎲 카테고리 룰렛 돌리기';
+  spinBtn.textContent = total===0 ? '카테고리에 인원을 넣어주세요' : '🎲 룰렛 돌리기';
 }
+function buildPriceStepper(){
+  const list=document.getElementById('priceCountList'); if(!list)return; list.innerHTML='';
+  RPRICE_ALL.forEach(({key,label})=>{
+    const row=document.createElement('div'); row.className='catcount-row';
+    const n=priceCounts[key]||0;
+    const avail=distFilter(P.filter(p=>(p.tier||[]).includes(key))).length;
+    const noStock=avail===0;
+    row.innerHTML=`<span class="cname">${label}${noStock?` <small style="color:var(--sub);font-weight:400">(없음)</small>`:''}</span>
+      <button class="jumpbtn" ${noStock?'disabled style="opacity:.4;cursor:default"':''}>바로 이걸로</button>
+      <div class="stepper"><button class="stepbtn" data-act="minus" ${noStock?'disabled':''}>−</button><span class="cnum">${n}</span><button class="stepbtn" data-act="plus" ${noStock?'disabled':''}>+</button></div>`;
+    row.classList.toggle('active', n>0);
+    if(!noStock){
+      row.querySelector('[data-act=minus]').onclick=()=>{ priceCounts[key]=Math.max(0,(priceCounts[key]||0)-1); buildCatStepper(); };
+      row.querySelector('[data-act=plus]').onclick=()=>{ priceCounts[key]=(priceCounts[key]||0)+1; buildCatStepper(); };
+      row.querySelector('.jumpbtn').onclick=()=>{ jumpToPrice(key,label); };
+    } else { priceCounts[key]=0; }
+    list.appendChild(row);
+  });
+}
+function buildPinStepper(){
+  const list=document.getElementById('pinCountList'); if(!list)return; list.innerHTML='';
+  Object.keys(pinCounts).forEach(name=>{
+    const n=pinCounts[name]; if(!n) return;
+    const row=document.createElement('div'); row.className='catcount-row active';
+    row.innerHTML=`<span class="cname">📍 ${name}</span>
+      <div class="stepper"><button class="stepbtn" data-act="minus">−</button><span class="cnum">${n}</span><button class="stepbtn" data-act="plus">+</button></div>`;
+    row.querySelector('[data-act=minus]').onclick=()=>{ pinCounts[name]=Math.max(0,(pinCounts[name]||0)-1); if(!pinCounts[name])delete pinCounts[name]; buildCatStepper(); };
+    row.querySelector('[data-act=plus]').onclick=()=>{ pinCounts[name]=(pinCounts[name]||0)+1; buildCatStepper(); };
+    list.appendChild(row);
+  });
+}
+document.getElementById('pinAddBtn').onclick=()=>{
+  const input=document.getElementById('pinSearchInput');
+  const q=input.value.trim().toLowerCase(); if(!q) return;
+  const found=P.find(p=>p.n.toLowerCase().includes(q));
+  const resDiv=document.getElementById('pinSearchResult');
+  if(!found){ resDiv.innerHTML='<div class="pin-suggest">검색 결과가 없어요</div>'; return; }
+  pinCounts[found.n]=(pinCounts[found.n]||0)+1;
+  resDiv.innerHTML=`<div class="pin-suggest">✅ "${found.n}" 추가됨</div>`;
+  input.value='';
+  buildCatStepper();
+};
 function catRouletteItems(){
-  // 카테고리별 인원수만큼 칸을 반복 생성 → 배열 원소 자체가 "가짜 P 객체"(n=카테고리명) 역할
+  // 카테고리·가격대·특정가게 인원수만큼 칸을 반복 생성해서 한 원판에 섞음
   const items=[];
-  RCATS_ALL.forEach(c=>{ const n=catCounts[c]||0; for(let i=0;i<n;i++) items.push({n:c,cat:c,__isCat:true}); });
+  RCATS_ALL.forEach(c=>{ const n=catCounts[c]||0; for(let i=0;i<n;i++) items.push({n:c,cat:c,__isCat:true,__filterType:'cat'}); });
+  RPRICE_ALL.forEach(({key,label})=>{ const n=priceCounts[key]||0; for(let i=0;i<n;i++) items.push({n:label,cat:label,__isCat:true,__filterType:'price',__filterKey:key}); });
+  Object.keys(pinCounts).forEach(name=>{ const n=pinCounts[name]||0;
+    const place=P.find(p=>p.n===name);
+    for(let i=0;i<n;i++) items.push({...place,__isCat:true,__filterType:'pin'}); });
   return items;
 }
+function jumpToPrice(key,label){
+  jumpToPool(label, distFilter(P.filter(p=>(p.tier||[]).includes(key))));
+}
 let rMode='slot';
-const wheelZone=document.getElementById('wheelZone'),wheelSvg=document.getElementById('wheelSvg'),wheelResult=document.getElementById('wheelResult'),gridZone=document.getElementById('gridZone');
+const wheelZone=document.getElementById('wheelZone'),wheelSvg=document.getElementById('wheelSvg'),wheelResult=document.getElementById('wheelResult'),slotCabinet=document.getElementById('slotCabinet');
 const WHEEL_COLORS=['#E8560F','#C8940A','#4A6C6F','#8B5E34','#6B4E3D']; // 지도·목재 톤 5색. 초록/파랑은 US인증·예약가능 의미와 겹쳐서 제외
 function setMode(m){
   rMode=m;
   document.querySelectorAll('.modetab').forEach(t=>t.classList.toggle('on',t.dataset.mode===m));
-  spinZone.style.display = m==='slot'?'flex':'none';
+  slotCabinet.style.display = m==='slot'?'block':'none';
   wheelZone.classList.toggle('on',m==='wheel');
   wheelResult.style.display = m==='wheel'?'flex':'none';
-  gridZone.classList.toggle('on',m==='grid');
-  document.getElementById('gridCaption').classList.toggle('on',m==='grid');
+  document.getElementById('boardTrack').classList.toggle('on',m==='grid');
   resetResultArea();
 }
 document.getElementById('modeTabs').addEventListener('click',e=>{
   const b=e.target.closest('.modetab'); if(!b||spinning) return; setMode(b.dataset.mode);
 });
 function resetResultArea(){
-  spinZone.innerHTML='<div class="spin-idle">버튼을 눌러 돌려보세요</div>';
+  spinZone.innerHTML='<div class="center-line"></div><div class="slot-idle">버튼을 눌러 돌려보세요</div>';
   wheelResult.innerHTML=''; wheelSvg.style.transition='none'; wheelSvg.style.transform='rotate(0deg)';
-  gridZone.innerHTML='';
+  document.getElementById('boardTrack').innerHTML='<div class="board-center"><div class="btitle" style="font-size:.85rem">버튼을 눌러<br>돌려보세요</div></div>';
   rerollLine.style.display='none'; spinBtn.textContent='🎲 돌리기'; spinBtn.disabled=false; spinBtnMode='spin';
 }
 const RDIST_OPTS=[{l:"전체",v:0},{l:"🚶 5분 이내",v:5},{l:"🚶 10분 이내",v:10}];
@@ -664,29 +792,17 @@ function buildDistOpts(){
     b.onclick=()=>{rDist=d.v;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');buildCatStepper();};
     wrap.appendChild(b);});
 }
-const RPRICE_OPTS=[{l:"가격 전체",v:0},{l:"💚 싸다",v:1},{l:"🍚 평균",v:2},{l:"💸 비쌈",v:3}];
-let rPrice=0;
-function buildPriceOpts(){
-  const wrap=document.getElementById('rPriceOpts'); wrap.innerHTML='';
-  RPRICE_OPTS.forEach(d=>{const b=document.createElement('button');
-    b.className='ropt'+(d.v===rPrice?' on':'');
-    b.textContent=d.l;
-    b.onclick=()=>{rPrice=d.v;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');buildCatStepper();};
-    wrap.appendChild(b);});
-}
 function distFilter(pool){
   let out=pool;
   if(rDist) out=out.filter(p=>p.walk<=rDist);
-  if(rPrice) out=out.filter(p=>(p.tier||[]).includes(rPrice));
   return out;
 }
 function goStage1(){
-  stage=1; catCounts={}; stagePool=null; pendingCatWinner=null; window.__finalWinner=null;
+  stage=1; catCounts={}; priceCounts={}; pinCounts={}; stagePool=null; pendingCatWinner=null; window.__finalWinner=null;
   catStepSec.style.display='block';
   stageLabel.classList.remove('on'); backStage.classList.remove('on');
   rDesc.textContent='먹고 싶은 카테고리마다 인원수를 넣어주세요 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 원판이 돌아갑니다';
   buildDistOpts();
-  buildPriceOpts();
   buildCatStepper();
   setMode(rMode);
 }
@@ -726,7 +842,7 @@ function doSpin(){
     if(!pool.length){
       if(rMode==='slot') spinZone.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요</div>';
       else if(rMode==='wheel') wheelResult.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요</div>';
-      else gridZone.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요</div>';
+      else document.querySelector('#boardTrack .board-center').innerHTML='<div class="btitle" style="font-size:.85rem">이 카테고리엔<br>등록된 가게가 없어요</div>';
       return;
     }
   }
@@ -738,26 +854,44 @@ function doSpin(){
 // ── 슬롯머신 ──
 function spinSlot(pool){
   spinning=true; spinBtn.disabled=true; rerollLine.style.display='none'; spinBtn.onclick=null;
-  const total=22+Math.floor(Math.random()*6);
-  let n=0;
-  function tick(){
-    const p=pool[Math.floor(Math.random()*pool.length)];
-    spinZone.innerHTML=`<div class="spin-card"><div class="nm">${p.n}</div><div class="ct">${p.cat}</div></div>`;
-    n++;
-    if(n>=total){
+  const ITEM_W=150;
+  // 릴에 뿌릴 카드 개수: 최소 24장, 마지막 칸이 당첨자
+  const total=24+Math.floor(Math.random()*6);
+  const items=[];
+  for(let i=0;i<total-1;i++) items.push(pool[Math.floor(Math.random()*pool.length)]);
+  const winner=pool[Math.floor(Math.random()*pool.length)];
+  items.push(winner);
+  spinZone.innerHTML='<div class="center-line"></div>';
+  const strip=document.createElement('div');
+  strip.className='reelstrip'; strip.id='reelStrip';
+  items.forEach(p=>{
+    const el=document.createElement('div'); el.className='reel-item';
+    el.innerHTML=`<div class="nm">${p.n}</div><div class="ct">${p.cat}</div>`;
+    strip.appendChild(el);
+  });
+  spinZone.appendChild(strip);
+  // 릴창 중앙에 마지막(당첨) 카드 중심이 오도록 이동거리 계산
+  const windowW = spinZone.clientWidth || 320;
+  const finalOffset = (total-1)*ITEM_W + ITEM_W/2 - windowW/2;
+  const overshoot = finalOffset + ITEM_W*0.35; // 살짝 더 갔다가 되돌아오는 덜컹 효과
+  strip.style.transition='none';
+  strip.style.transform='translateX(0px)';
+  void strip.offsetWidth;
+  strip.style.transition='transform 2.6s cubic-bezier(.1,.6,.2,1)';
+  strip.style.transform=`translateX(-${overshoot}px)`;
+  let tickCount=0; const tickTotal=Math.round(2600/70);
+  const tickTimer=setInterval(()=>{ playTick(); tickCount++; if(tickCount>=tickTotal) clearInterval(tickTimer); },70);
+  spinTimer=setTimeout(()=>{
+    strip.style.transition='transform .4s cubic-bezier(.34,1.56,.64,1)';
+    strip.style.transform=`translateX(-${finalOffset}px)`;
+    spinTimer=setTimeout(()=>{
+      clearInterval(tickTimer);
       spinning=false; spinBtn.disabled=false;
-      const winner=pool[Math.floor(Math.random()*pool.length)];
-      spinZone.innerHTML=`<div class="spin-card"><div class="nm">${winner.n}</div><div class="ct">${winner.cat}${winner.r?` · ★${winner.r.toFixed(1)}`:''}</div></div>`;
       celebrateWinner();
+      playWinChime();
       finishSpin(winner);
-      return;
-    }
-    // 감속곡선: 처음엔 빠르게(60ms) 점점 느려져서 마지막엔 뚝뚝 끊기듯(최대 300ms)
-    const progress=n/total;
-    const delay = 60 + Math.pow(progress,2.4)*260;
-    spinTimer=setTimeout(tick,delay);
-  }
-  tick();
+    },420);
+  },2650);
 }
 
 // ── 원판(휠) 룰렛: 빠르게 돌다 서서히 감속 ──
@@ -814,48 +948,66 @@ function spinWheel(pool){
 }
 
 // ── 그리드 보드 룰렛: 칸을 순회하다 서서히 멈춤 ──
+function buildBoardTrack(items){
+  const track=document.getElementById('boardTrack');
+  track.innerHTML='<div class="board-center"><div class="btitle">오늘의<br>점심</div></div>';
+  const n=items.length;
+  // 정사각형 둘레에 칸을 고르게 배치: 4변에 나눠서 코너 포함 순서대로 좌표 계산(부루마블 트랙 느낌)
+  const perSide=Math.max(1,Math.ceil(n/4));
+  const cellPct=15; // .bcell width 15%와 맞춤
+  const margin=2; // 트랙 안쪽 여백(%)
+  const usable=100-margin*2-cellPct;
+  const cells=[];
+  for(let i=0;i<n;i++){
+    const side=Math.floor(i/perSide); // 0:상단,1:우측,2:하단,3:좌측
+    const posInSide=i%perSide;
+    const t = perSide<=1?0:posInSide/(perSide); // 0~1 비율
+    let x,y;
+    if(side===0){ x=margin+t*usable; y=margin; }
+    else if(side===1){ x=margin+usable; y=margin+t*usable; }
+    else if(side===2){ x=margin+usable-t*usable; y=margin+usable; }
+    else{ x=margin; y=margin+usable-t*usable; }
+    const el=document.createElement('div'); el.className='bcell'+(posInSide===0?' corner':'');
+    el.style.left=x+'%'; el.style.top=y+'%';
+    el.innerHTML=`<span>${items[i].n.length>6?items[i].n.slice(0,6)+'…':items[i].n}</span>`;
+    track.appendChild(el);
+    cells.push(el);
+  }
+  return cells;
+}
 function spinGrid(pool){
   spinning=true; spinBtn.disabled=true; rerollLine.style.display='none'; spinBtn.onclick=null;
-  const items=sampleFor(pool, Math.min(20, pool.length));
-  gridZone.innerHTML='';
-  const cells=[];
-  items.forEach(p=>{
-    const el=document.createElement('div'); el.className='gcell';
-    el.innerHTML=`<span>${p.n.length>7?p.n.slice(0,7)+'…':p.n}</span>`;
-    gridZone.appendChild(el); cells.push(el);
-  });
-  // 중앙 고정칸을 없애 아이템 개수와 무관하게 항상 완전히 채워진 격자가 되도록 함(빈칸 버그 근본 해결)
+  const items=sampleFor(pool, Math.min(16, pool.length)); // 트랙 둘레라 16개 안팎이 시각적으로 적당
+  const cells=buildBoardTrack(items);
   const winIdx=Math.floor(Math.random()*items.length);
-  let cur=0, speed=45; const minLaps=3;
+  let cur=0, speed=90; const minLaps=2;
   let targetSteps = minLaps*items.length + winIdx + 1, steps=0;
   function tick(){
     cells.forEach(c=>c.classList.remove('lit'));
     cells[cur%items.length].classList.add('lit');
+    playTick();
     cur++; steps++;
     const remain=targetSteps-steps;
     if(remain<=0){
       spinning=false; spinBtn.disabled=false;
-      celebrateWinner();
+      celebrateWinner(); playWinChime();
       finishSpinGridResult(items[winIdx]);
       return;
     }
-    // 남은 스텝이 줄수록 급격히 느려짐(마지막엔 뚝뚝 끊기며 쫄깃하게)
-    if(remain<10) speed=Math.min(340, speed + 34);
+    if(remain<10) speed=Math.min(360, speed + 32);
     spinTimer=setTimeout(tick,speed);
   }
   tick();
 }
 function finishSpinGridResult(winner){
-  const banner=document.createElement('div');
-  banner.style.cssText='grid-column:1/5;text-align:center;padding-top:8px;font-family:"Black Han Sans",sans-serif;font-size:1.05rem';
-  banner.innerHTML=`🎉 ${winner.n} <span style="font-size:.7rem;color:var(--sub);font-family:'Noto Sans KR'">· ${winner.cat}</span>`;
-  gridZone.appendChild(banner);
+  const center=document.querySelector('#boardTrack .board-center');
+  if(center) center.innerHTML=`<div class="btitle">🎉 ${winner.n}</div><div style="font-size:.72rem;color:var(--sub);margin-top:4px;font-weight:700">${winner.cat}${winner.r?` · ★${winner.r.toFixed(1)}`:''}</div>`;
   finishSpin(winner);
 }
 
 let pendingCatWinner=null;
 function finishSpin(winner){
-  if(winner.__isCat){
+  if(winner.__isCat && winner.__filterType!=='pin'){
     // ── 스테이지1 종료: 결과를 그대로 유지, 사용자가 버튼 눌러야 다음 단계로 ──
     pendingCatWinner = winner;
     rDesc.textContent = `🎉 "${winner.n}" 당첨! 아래 버튼으로 이제 그 안에서 가게를 뽑아보세요`;
@@ -865,7 +1017,7 @@ function finishSpin(winner){
     spinBtnMode='next';
     return;
   }
-  // ── 스테이지2 종료: 최종 가게 확정 ──
+  // ── 최종 가게 확정 (스테이지2 종료 또는 스테이지1에서 특정가게가 바로 당첨된 경우) ──
   window.__finalWinner = winner;
   rerollLine.style.display='block';
   window.__lastRSize = rSize;
@@ -876,7 +1028,7 @@ function finishSpin(winner){
     box.style.marginTop='10px';
     if(rMode==='slot') spinZone.appendChild(box);
     else if(rMode==='wheel') wheelResult.appendChild(box);
-    else gridZone.appendChild(box);
+    else document.querySelector('#boardTrack .board-center').appendChild(box);
   }
   spinBtn.disabled=false;
   spinBtn.textContent='결정! 지도에서 보기';
@@ -908,7 +1060,7 @@ function advanceToStage3(presetPool){
   spinBtnMode='spin';
   if(stagePool.length===0){
     const msg='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요. 카테고리를 다시 골라주세요</div>';
-    if(rMode==='slot') spinZone.innerHTML=msg; else if(rMode==='wheel') wheelResult.innerHTML=msg; else gridZone.innerHTML=msg;
+    if(rMode==='slot') spinZone.innerHTML=msg; else if(rMode==='wheel') wheelResult.innerHTML=msg; else document.querySelector('#boardTrack .board-center').innerHTML=`<div class="btitle" style="font-size:.85rem">이 카테고리엔<br>등록된 가게가 없어요</div>`;
   }
 }
 let spinBtnMode='spin', clickLocked=false; // 'spin' | 'next' | 'confirm'
