@@ -906,8 +906,11 @@ function setMode(m){
   wheelZone.classList.toggle('on',m==='wheel');
   wheelResult.style.display = m==='wheel'?'flex':'none';
   // 슬롯·원판 둘 다 카테고리/가격/거리/핀을 먼저 스테퍼로 고르고, 그 조건 안에서 돌림(레버 or 원판)
-  catStepSec.style.display='block';
-  rDesc.textContent='먹고 싶은 카테고리마다 인원수를 넣어주세요 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 뽑을게요';
+  if(stage===1){
+    catStepSec.style.display='block';
+    buildCatStepper(); // 탭 전환해도 이미 골라둔 인원수가 화면에 그대로 보이도록 다시 그림
+    rDesc.textContent='먹고 싶은 카테고리마다 인원수를 넣어주세요 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 뽑을게요';
+  }
   stageLabel.classList.remove('on'); backStage.classList.remove('on');
   resetResultArea();
   spinBtn.style.display = m==='slot' ? 'none' : 'block'; // 슬롯은 레버로만 조작
@@ -1269,7 +1272,9 @@ function releaseLever(dy){
   knob.style.transition='top .18s cubic-bezier(.3,.9,.4,1.3)'; // 확 튕겨 올라가는 느낌
   knob.style.top='0px';
   slotLever.classList.remove('pulled');
-  const threshold = window.__finalWinner ? LEVER_REPULL_PX : LEVER_PULL_PX;
+  const rs=document.getElementById('resultSummary');
+  const hasResult = window.__finalWinner && rs.style.display==='block';
+  const threshold = hasResult ? LEVER_REPULL_PX : LEVER_PULL_PX;
   if(dy>=threshold) triggerSlotSpin(); // 튕겨 올라가는 순간 "차캉"과 함께 스핀 시작
 }
 slotLever.addEventListener('pointerup',e=>{
@@ -1282,7 +1287,9 @@ slotLever.addEventListener('pointercancel',()=>{ leverDragging=false; });
 // 결과가 이미 나온 상태에서 드래그 없이 그냥 클릭(탭)만 해도 바로 재추첨 - "다시 돌리기" 안 눌러도 되게
 slotLever.addEventListener('click',()=>{
   if(rMode!=='slot' || spinning || clickLocked) return;
-  if(!window.__finalWinner) return; // 첫 스핀은 반드시 드래그로(실수 방지), 재추첨만 탭 허용
+  // 결과 카드가 실제로 화면에 떠 있을 때만 "탭만 해도 재추첨" 허용 (스텝퍼 조작 중 레버를 스쳐도 오작동 안 나게)
+  const rs=document.getElementById('resultSummary');
+  if(!window.__finalWinner || rs.style.display!=='block') return;
   triggerSlotSpin();
 });
 document.getElementById('rerollBtn').onclick=()=>{
