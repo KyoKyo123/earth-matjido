@@ -157,16 +157,17 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .roulette-sec .label{font-size:.76rem;font-weight:800;color:var(--sub);margin-bottom:8px;letter-spacing:.02em}
 .roulette-opts{display:flex;flex-wrap:wrap;gap:6px}
 .catcount-list{display:flex;flex-direction:column;gap:6px}
-.catcount-row{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1.5px solid var(--line);border-radius:var(--r-md);background:var(--surface);transition:border-color .15s,background .15s}
-.catcount-row .cname{flex:1;font-size:.85rem;font-weight:700;color:var(--ink)}
-.catcount-row .stepper{display:flex;align-items:center;gap:9px}
-.catcount-row .stepbtn{width:26px;height:26px;border-radius:50%;border:none;background:var(--line-soft);color:var(--ink);font-weight:800;font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s}
+.catcount-row{display:flex;flex-direction:column;gap:6px;padding:10px 11px;border:1.5px solid var(--line);border-radius:var(--r-md);background:var(--surface);transition:border-color .15s,background .15s}
+.catcount-row .toprow{display:flex;align-items:center;gap:9px}
+.catcount-row .cname{flex:1;font-size:.85rem;font-weight:700;color:var(--ink);min-width:0}
+.catcount-row .stepper{display:flex;align-items:center;gap:11px;flex:0 0 auto}
+.catcount-row .stepbtn{width:30px;height:30px;border-radius:50%;border:none;background:var(--line-soft);color:var(--ink);font-weight:800;font-size:1.05rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s}
 .catcount-row .stepbtn:active{background:var(--reg);color:#fff}
-.catcount-row .cnum{width:18px;text-align:center;font-weight:800;font-size:.9rem}
+.catcount-row .cnum{width:20px;text-align:center;font-weight:800;font-size:.95rem}
 .catcount-row.active{border-color:var(--reg);background:#FFF4EC}
-.catcount-row .jumpbtn{border:1.5px solid var(--ct);background:var(--surface);color:var(--ct);border-radius:8px;
-  font:inherit;font-size:.68rem;font-weight:800;padding:6px 10px;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s}
-.catcount-row .jumpbtn:active{background:var(--ct);color:#fff}
+.catcount-row .jumpbtn{align-self:flex-start;border:none;background:none;color:var(--ct);border-radius:8px;
+  font:inherit;font-size:.72rem;font-weight:700;padding:4px 2px;cursor:pointer;white-space:nowrap;text-decoration:underline;transition:color .12s}
+.catcount-row .jumpbtn:active{color:var(--reg)}
 .searchpin-row{display:flex;gap:7px;margin-bottom:8px}
 .searchpin-row input{flex:1;font:inherit;font-size:.84rem;padding:9px 11px;border-radius:var(--r-md);border:1.5px solid var(--line);background:var(--surface);outline:none}
 .searchpin-row input:focus{border-color:var(--reg)}
@@ -814,9 +815,11 @@ function buildCatStepper(){
     const n=catCounts[c]||0;
     const avail=distFilter(P.filter(p=>p.cat===c)).length;
     const noStock=avail===0;
-    row.innerHTML=`<span class="cname">${c}${noStock?` <small style="color:var(--sub);font-weight:400">(도보 ${rDist}분 내 없음)</small>`:''}</span>
-      <button class="jumpbtn" ${noStock?'disabled style="opacity:.4;cursor:default"':''}>바로 이걸로</button>
-      <div class="stepper"><button class="stepbtn" data-act="minus" ${noStock?'disabled':''}>−</button><span class="cnum">${n}</span><button class="stepbtn" data-act="plus" ${noStock?'disabled':''}>+</button></div>`;
+    row.innerHTML=`<div class="toprow">
+        <span class="cname">${c}${noStock?` <small style="color:var(--sub);font-weight:400">(도보 ${rDist}분 내 없음)</small>`:''}</span>
+        <div class="stepper"><button class="stepbtn" data-act="minus" ${noStock?'disabled':''}>−</button><span class="cnum">${n}</span><button class="stepbtn" data-act="plus" ${noStock?'disabled':''}>+</button></div>
+      </div>
+      ${noStock?'':'<button class="jumpbtn">바로 이걸로 →</button>'}`;
     row.classList.toggle('active', n>0);
     if(!noStock){
       row.querySelector('[data-act=minus]').onclick=()=>{ catCounts[c]=Math.max(0,(catCounts[c]||0)-1); buildCatStepper(); };
@@ -843,9 +846,11 @@ function buildPriceStepper(){
     const n=priceCounts[key]||0;
     const avail=distFilter(P.filter(p=>(p.tier||[]).includes(key))).length;
     const noStock=avail===0;
-    row.innerHTML=`<span class="cname">${label}${noStock?` <small style="color:var(--sub);font-weight:400">(없음)</small>`:''}</span>
-      <button class="jumpbtn" ${noStock?'disabled style="opacity:.4;cursor:default"':''}>바로 이걸로</button>
-      <div class="stepper"><button class="stepbtn" data-act="minus" ${noStock?'disabled':''}>−</button><span class="cnum">${n}</span><button class="stepbtn" data-act="plus" ${noStock?'disabled':''}>+</button></div>`;
+    row.innerHTML=`<div class="toprow">
+        <span class="cname">${label}${noStock?` <small style="color:var(--sub);font-weight:400">(없음)</small>`:''}</span>
+        <div class="stepper"><button class="stepbtn" data-act="minus" ${noStock?'disabled':''}>−</button><span class="cnum">${n}</span><button class="stepbtn" data-act="plus" ${noStock?'disabled':''}>+</button></div>
+      </div>
+      ${noStock?'':'<button class="jumpbtn">바로 이걸로 →</button>'}`;
     row.classList.toggle('active', n>0);
     if(!noStock){
       row.querySelector('[data-act=minus]').onclick=()=>{ priceCounts[key]=Math.max(0,(priceCounts[key]||0)-1); buildCatStepper(); };
