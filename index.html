@@ -35,20 +35,24 @@ h1 em{font-style:normal;color:var(--us)}
 .searchbar .clr{position:absolute;right:7px;top:50%;transform:translateY(-50%);border:none;background:var(--line-soft);color:var(--sub);width:20px;height:20px;border-radius:50%;font-size:.68rem;cursor:pointer;display:none}
 .searchbar .clr.on{display:block}
 .dicebtn{flex:0 0 auto;border:1.5px solid var(--line);border-radius:var(--r-md);background:var(--surface);color:var(--sub-deep);font:inherit;font-weight:700;font-size:.78rem;padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:5px}
-.roulette-banner{margin-top:10px;padding:12px 12px 10px;border-radius:var(--r-lg);
+.roulette-banner{margin-top:10px;padding:12px 12px 11px;border-radius:var(--r-lg);
   background:linear-gradient(155deg,#3C2A6E,#241947);box-shadow:var(--sh-2)}
-.rb-title{text-align:center;font-family:'Black Han Sans',sans-serif;font-size:1.05rem;color:#FFE9A8;
-  letter-spacing:-.2px;margin-bottom:9px;text-shadow:0 2px 4px rgba(0,0,0,.3)}
-.rb-row{display:flex;gap:8px}
-.rb-btn{flex:1;border:none;border-radius:var(--r-md);background:linear-gradient(155deg,var(--reg),var(--reg-deep));
-  color:#fff;font:inherit;font-weight:800;font-size:.86rem;padding:11px 4px;cursor:pointer;line-height:1.5;
-  box-shadow:0 3px 0 var(--reg-deep),0 5px 12px rgba(0,0,0,.25);transition:transform .1s}
-.rb-btn small{font-weight:600;font-size:.68rem;opacity:.9}
-.rb-btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--reg-deep),0 2px 6px rgba(0,0,0,.2)}
-.rb-custom{width:100%;margin-top:9px;border:2px solid var(--gold);border-radius:var(--r-md);
-  background:linear-gradient(155deg,#4A3580,#3C2A6E);color:var(--gold-bg);font:inherit;font-weight:800;font-size:.88rem;
-  padding:11px;cursor:pointer;box-shadow:0 3px 0 #2A1E4E,0 5px 12px rgba(0,0,0,.25);transition:transform .1s}
-.rb-custom:active{transform:translateY(2px);box-shadow:0 1px 0 #2A1E4E,0 2px 6px rgba(0,0,0,.2)}
+.rb-title{text-align:center;font-family:'Black Han Sans',sans-serif;font-size:1.02rem;color:#FFE9A8;
+  letter-spacing:-.2px;margin-bottom:8px;text-shadow:0 2px 4px rgba(0,0,0,.3)}
+.rb-row{display:flex;gap:6px}
+.rb-btn{flex:1;border:none;border-radius:10px;background:linear-gradient(155deg,var(--reg),var(--reg-deep));
+  color:#fff;font:inherit;font-weight:700;font-size:.74rem;padding:8px 2px;cursor:pointer;line-height:1.4;
+  box-shadow:0 2px 0 var(--reg-deep),0 3px 8px rgba(0,0,0,.25);transition:transform .1s}
+.rb-btn small{font-weight:600;font-size:.6rem;opacity:.88}
+.rb-btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--reg-deep),0 1px 4px rgba(0,0,0,.2)}
+.rb-divider{display:flex;align-items:center;gap:8px;margin:10px 0 9px;color:rgba(255,255,255,.35);font-size:.68rem}
+.rb-divider::before,.rb-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.18)}
+.rb-custom{width:100%;border:2px solid var(--gold);border-radius:var(--r-md);
+  background:linear-gradient(155deg,#F4CE5A,#D4A017);color:#4A2E00;font:inherit;font-weight:900;font-size:1rem;
+  padding:15px 10px;cursor:pointer;box-shadow:0 4px 0 #9A6E0A,0 7px 16px rgba(0,0,0,.35);transition:transform .1s;
+  display:flex;align-items:center;justify-content:center;gap:7px}
+.rb-custom .rbc-sub{display:block;font-size:.68rem;font-weight:700;color:#6B4A10;margin-top:2px}
+.rb-custom:active{transform:translateY(3px);box-shadow:0 1px 0 #9A6E0A,0 2px 6px rgba(0,0,0,.25)}
 .dicebtn:active{transform:scale(.96)}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:8px 0 1px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
@@ -173,12 +177,13 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .ropt.on{background:var(--ink);border-color:var(--ink);color:#fff}
 
 /* 슬롯머신: 아치형 카지노 캐비닛(참고이미지 스타일) + 세로 3릴 + 오른쪽 당기는 레버 */
-.slotcabinet{position:relative;border-radius:50% 50% 18px 18px/70px 70px 18px 18px;padding:34px 58px 20px 22px;margin:14px 0 15px;
+.slotcabinet{position:relative;border-radius:24px 24px 16px 16px;padding:28px 58px 18px 20px;margin:26px 0 15px;
   background:linear-gradient(165deg,#D42A1C,#8E1710);box-shadow:0 4px 0 #6E1109,0 10px 24px rgba(0,0,0,.4);
   border:4px solid #E8B23C}
-.slotcabinet::before{content:'WIN';position:absolute;left:50%;top:6px;transform:translateX(-50%);
+.slotcabinet::before{content:'WIN';position:absolute;left:50%;top:-16px;transform:translateX(-50%);
   background:linear-gradient(155deg,#FCE07A,#C89320);color:#7A3C00;font-family:'Black Han Sans',sans-serif;
-  font-size:1rem;letter-spacing:.12em;padding:3px 20px;border-radius:20px;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.6);border:2px solid #fff;z-index:2}
+  font-size:.92rem;line-height:1;letter-spacing:.14em;padding:6px 22px 5px;border-radius:20px;
+  box-shadow:0 3px 8px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.65);border:2.5px solid #fff;z-index:3;white-space:nowrap}
 .mini-reels{display:flex;gap:6px;margin-bottom:8px}
 .mini-slot{flex:1;height:38px;border-radius:9px;overflow:hidden;background:linear-gradient(180deg,#0E0A06,#1C130C);
   box-shadow:inset 0 3px 6px rgba(0,0,0,.7);border:2px solid #7A4A1E;display:flex;align-items:center;justify-content:center;position:relative}
@@ -236,6 +241,9 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .rs-meta{text-align:center;margin-top:8px;font-size:.84rem;font-weight:700;color:var(--blue)}
 .rs-name{text-align:center;font-family:'Black Han Sans',sans-serif;font-size:1.05rem;margin-top:9px;color:var(--ink)}
 .rs-memo{text-align:center;font-size:.78rem;color:var(--sub);margin-top:4px;line-height:1.5}
+.rs-menubtn{width:100%;margin-top:11px;border:none;border-radius:10px;background:linear-gradient(155deg,#3C2A6E,#2A1E4E);
+  color:#fff;font:inherit;font-weight:800;font-size:.82rem;padding:11px;cursor:pointer}
+.rs-menubtn:active{transform:scale(.98)}
 .reroll-line{text-align:center;margin-top:11px;font-size:.78rem;color:var(--sub)}
 .reroll-line button{border:none;background:none;color:var(--reg-deep);font-weight:700;cursor:pointer;text-decoration:underline;font:inherit}
 
@@ -257,27 +265,6 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .wheel-result .nm{font-family:'Black Han Sans',sans-serif;font-size:1.2rem;color:var(--ink)}
 .wheel-result .ct{font-size:.76rem;color:var(--sub);margin-top:3px}
 
-/* 그리드 보드(구버전, 이제 안 씀 - boardtrack으로 대체) */
-.gridzone{display:none;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 8px}
-.gridzone.on{display:grid}
-.gcell{aspect-ratio:1;border-radius:var(--r-sm);background:var(--line-soft);display:flex;align-items:center;justify-content:center;
-  text-align:center;font-size:.66rem;font-weight:700;color:var(--sub-deep);padding:4px;line-height:1.25;transition:background .08s,color .08s,transform .08s}
-.gcell.lit{background:var(--reg);color:#fff;transform:scale(1.1);box-shadow:0 4px 12px rgba(232,86,15,.45)}
-
-/* 보드 트랙: 부루마블처럼 정사각형 둘레를 도는 칸 + 중앙 로고 + 말(토큰) */
-.boardtrack{display:none;position:relative;width:100%;aspect-ratio:1;margin:8px 0 8px;
-  background:linear-gradient(160deg,#3E7D4C,#2E5E3A);border-radius:var(--r-lg);padding:10px;
-  box-shadow:inset 0 0 0 3px rgba(255,255,255,.15),var(--sh-2)}
-.boardtrack.on{display:block}
-.board-center{position:absolute;left:14%;top:14%;right:14%;bottom:14%;background:#F4EEDD;border-radius:var(--r-md);
-  display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;
-  box-shadow:inset 0 0 0 2px rgba(0,0,0,.08)}
-.board-center .btitle{font-family:'Black Han Sans',sans-serif;font-size:1.15rem;color:var(--ink);line-height:1.35}
-.bcell{position:absolute;width:15%;aspect-ratio:1;border-radius:8px;background:#FBF6E8;
-  display:flex;align-items:center;justify-content:center;text-align:center;font-size:.56rem;font-weight:800;color:var(--sub-deep);
-  padding:3px;line-height:1.15;box-shadow:0 2px 4px rgba(0,0,0,.18);transition:background .1s,color .1s,transform .1s;overflow:hidden}
-.bcell.lit{background:var(--gold);color:#fff;transform:scale(1.22);z-index:5;box-shadow:0 0 0 3px #fff,0 4px 14px rgba(200,148,10,.6)}
-.bcell.corner{background:#FFE9B0}
 
 /* 승리 연출: CTA(주황)와 구분되는 골드톤. 명확히 한 순간에만 등장 */
 .bang-overlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;pointer-events:none}
@@ -306,7 +293,8 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
       <button class="rb-btn" data-meal="dinner">🍻 저녁<br><small>아무거나</small></button>
       <button class="rb-btn" data-meal="dessert">🍰 후식<br><small>아무거나</small></button>
     </div>
-    <button class="rb-custom" id="diceOpen">🎯 직접 골라서 돌리기</button>
+    <div class="rb-divider">또는</div>
+    <button class="rb-custom" id="diceOpen">🎯 직접 골라서 돌리기<span class="rbc-sub"></span></button>
   </div>
   <div class="headrow">
     <div class="searchbar"><span class="ico">🔍</span><input id="q" type="search" placeholder="가게·메뉴·후기 검색" autocomplete="off"><button class="clr" id="qclr">✕</button></div>
@@ -336,7 +324,6 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
     <div class="modetabs" id="modeTabs">
       <button class="modetab on" data-mode="slot">🎰 슬롯</button>
       <button class="modetab" data-mode="wheel">🎡 원판</button>
-      <button class="modetab" data-mode="grid">🎯 보드</button>
     </div>
     <div class="roulette-sec" id="catStepSec">
       <div class="label">도보 거리</div>
@@ -374,7 +361,6 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
       <div class="wheel-center">🍽️</div>
     </div>
     <div class="wheel-result" id="wheelResult" style="display:none"></div>
-    <div class="boardtrack" id="boardTrack"></div>
     <div class="result-summary" id="resultSummary" style="display:none"></div>
     <button class="spinbtn" id="spinBtn">🎲 돌리기</button>
     <div class="reroll-line" id="rerollLine" style="display:none">
@@ -900,21 +886,19 @@ function setMode(m){
   slotCabinet.style.display = m==='slot'?'block':'none';
   wheelZone.classList.toggle('on',m==='wheel');
   wheelResult.style.display = m==='wheel'?'flex':'none';
-  document.getElementById('boardTrack').classList.toggle('on',m==='grid');
-  // 룰렛 모달 안의 슬롯은 카테고리/가격/핀을 직접 골라서 돌리는 방식(기존과 동일)
+  // 슬롯·원판 둘 다 카테고리/가격/거리/핀을 먼저 스테퍼로 고르고, 그 조건 안에서 돌림(레버 or 원판)
   catStepSec.style.display='block';
-  rDesc.textContent='먹고 싶은 카테고리마다 인원수를 넣어주세요 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 원판이 돌아갑니다';
+  rDesc.textContent='먹고 싶은 카테고리마다 인원수를 넣어주세요 (예: 양식2 · 일식1 · 한식1) → 그 비율대로 뽑을게요';
   stageLabel.classList.remove('on'); backStage.classList.remove('on');
   resetResultArea();
-  spinBtn.style.display='block';
+  spinBtn.style.display = m==='slot' ? 'none' : 'block'; // 슬롯은 레버로만 조작
 }
 document.getElementById('modeTabs').addEventListener('click',e=>{
   const b=e.target.closest('.modetab'); if(!b||spinning) return; setMode(b.dataset.mode);
 });
 function resetResultArea(){
-  spinZone.innerHTML='<div class="result-frame"></div><div class="slot-idle">레버를 당겨 완전 랜덤으로 뽑아보세요</div>';
+  spinZone.innerHTML='<div class="result-frame"></div><div class="slot-idle">레버를 당겨보세요 ↓</div>';
   wheelResult.innerHTML=''; wheelSvg.style.transition='none'; wheelSvg.style.transform='rotate(0deg)';
-  document.getElementById('boardTrack').innerHTML='<div class="board-center"><div class="btitle" style="font-size:.85rem">버튼을 눌러<br>돌려보세요</div></div>';
   document.querySelectorAll('.mini-slot').forEach(el=>{
     el.classList.remove('locked','spinning');
     el.querySelector('.mini-val').textContent='?';
@@ -981,18 +965,16 @@ function doSpin(){
     pool=stagePool;
     if(!pool.length){
       if(rMode==='slot') spinZone.innerHTML='<div class="result-frame"></div><div class="slot-idle">이 카테고리엔 등록된 가게가 없어요</div>';
-      else if(rMode==='wheel') wheelResult.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요</div>';
-      else document.querySelector('#boardTrack .board-center').innerHTML='<div class="btitle" style="font-size:.85rem">이 카테고리엔<br>등록된 가게가 없어요</div>';
+      else wheelResult.innerHTML='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요</div>';
       return;
     }
   }
   if(rMode==='slot') spinSlot(pool);
-  else if(rMode==='wheel') spinWheel(pool);
-  else spinGrid(pool);
+  else spinWheel(pool);
 }
 function spinSlot(pool){
   // 룰렛 모달 안의 슬롯: 카테고리 스테퍼로 고른 조건 안에서 세로 릴 하나로 결과를 뽑음
-  spinning=true; spinBtn.disabled=true; rerollLine.style.display='none';
+  spinning=true; rerollLine.style.display='none';
   spinMainReel(pool, '');
 }
 
@@ -1143,84 +1125,17 @@ function spinWheel(pool){
   },3600);
 }
 
-// ── 그리드 보드 룰렛: 칸을 순회하다 서서히 멈춤 ──
-function buildBoardTrack(items){
-  const track=document.getElementById('boardTrack');
-  track.innerHTML='<div class="board-center"><div class="btitle">오늘의<br>점심</div></div>';
-  const n=items.length;
-  // 정사각형 둘레에 칸을 고르게 배치: 4변에 나눠서 코너 포함 순서대로 좌표 계산(부루마블 트랙 느낌)
-  const perSide=Math.max(1,Math.ceil(n/4));
-  const cellPct=15; // .bcell width 15%와 맞춤
-  const margin=2; // 트랙 안쪽 여백(%)
-  const usable=100-margin*2-cellPct;
-  const cells=[];
-  for(let i=0;i<n;i++){
-    const side=Math.floor(i/perSide); // 0:상단,1:우측,2:하단,3:좌측
-    const posInSide=i%perSide;
-    const t = perSide<=1?0:posInSide/(perSide); // 0~1 비율
-    let x,y;
-    if(side===0){ x=margin+t*usable; y=margin; }
-    else if(side===1){ x=margin+usable; y=margin+t*usable; }
-    else if(side===2){ x=margin+usable-t*usable; y=margin+usable; }
-    else{ x=margin; y=margin+usable-t*usable; }
-    const el=document.createElement('div'); el.className='bcell'+(posInSide===0?' corner':'');
-    el.style.left=x+'%'; el.style.top=y+'%';
-    el.innerHTML=`<span>${items[i].n.length>6?items[i].n.slice(0,6)+'…':items[i].n}</span>`;
-    track.appendChild(el);
-    cells.push(el);
-  }
-  return cells;
-}
-function spinGrid(pool){
-  spinning=true; spinBtn.disabled=true; rerollLine.style.display='none'; spinBtn.onclick=null;
-  const items=sampleFor(pool, Math.min(16, pool.length)); // 트랙 둘레라 16개 안팎이 시각적으로 적당
-  const cells=buildBoardTrack(items);
-  const winIdx=Math.floor(Math.random()*items.length);
-  let cur=0, speed=90; const minLaps=2;
-  let targetSteps = minLaps*items.length + winIdx + 1, steps=0;
-  function tick(){
-    cells.forEach(c=>c.classList.remove('lit'));
-    cells[cur%items.length].classList.add('lit');
-    playTick();
-    cur++; steps++;
-    const remain=targetSteps-steps;
-    if(remain<=0){
-      spinning=false; spinBtn.disabled=false;
-      celebrateWinner(); playWinChime();
-      finishSpinGridResult(items[winIdx]);
-      return;
-    }
-    if(remain<10) speed=Math.min(360, speed + 32);
-    spinTimer=setTimeout(tick,speed);
-  }
-  tick();
-}
-function finishSpinGridResult(winner){
-  const center=document.querySelector('#boardTrack .board-center');
-  if(center) center.innerHTML=`<div class="btitle">🎉 ${winner.n}</div><div style="font-size:.72rem;color:var(--sub);margin-top:4px;font-weight:700">${winner.cat}${winner.r?` · ★${winner.r.toFixed(1)}`:''}</div>`;
-  finishSpin(winner);
-}
-
 let pendingCatWinner=null;
 function finishSpin(winner){
   if(winner.__isCat && winner.__filterType!=='pin'){
     pendingCatWinner = winner;
-    if(rMode==='wheel'){
-      // 원판 모드: 결과를 잠깐 보여준 뒤 버튼 없이 자동으로 다음 판(가게 뽑기)까지 이어서 진행
-      rDesc.textContent = `🎉 "${winner.n}" 당첨! 이어서 가게를 뽑을게요`;
-      lockClicksBriefly(1250);
-      setTimeout(()=>{
-        advanceToStage3();
-        setTimeout(()=>{ if(stagePool.length) doSpin(); },250);
-      },1150);
-      return;
-    }
-    // 슬롯·보드는 기존처럼 사용자가 버튼을 눌러야 다음 단계로(결과를 충분히 보고 넘어가는 느낌 유지)
-    rDesc.textContent = `🎉 "${winner.n}" 당첨! 아래 버튼으로 이제 그 안에서 가게를 뽑아보세요`;
-    rerollLine.style.display='block';
-    spinBtn.disabled=false;
-    spinBtn.textContent = `▶ "${winner.n}" 가게 뽑으러 가기`;
-    spinBtnMode='next';
+    // 슬롯·원판 둘 다 결과를 잠깐 보여준 뒤 자동으로 다음 판(가게 뽑기)까지 이어서 진행 - 별도 버튼 클릭 불필요
+    rDesc.textContent = `🎉 "${winner.n}" 당첨! 이어서 가게를 뽑을게요`;
+    lockClicksBriefly(1250);
+    setTimeout(()=>{
+      advanceToStage3();
+      setTimeout(()=>{ if(stagePool.length) doSpin(); },250);
+    },1150);
     return;
   }
   // ── 최종 가게 확정 (스테이지2 종료 또는 스테이지1에서 특정가게가 바로 당첨된 경우) ──
@@ -1238,16 +1153,18 @@ function finishSpin(winner){
     </div>
     <div class="rs-meta">🚶 도보 ${walkTxt}</div>
     <div class="rs-name">${winner.n}</div>
-    ${winner.memo?`<div class="rs-memo">${winner.memo}</div>`:''}`;
+    ${winner.memo?`<div class="rs-memo">${winner.memo}</div>`:''}
+    <button class="rs-menubtn" id="rsMenuBtn">📷 메뉴·가격 보기</button>`;
   rs.style.display='block';
+  const menuBtn=document.getElementById('rsMenuBtn');
+  if(menuBtn) menuBtn.onclick=()=>window.open(winner.kakaoUrl||`https://map.kakao.com/?q=${encodeURIComponent(winner.n)}`,'_blank','noopener');
   const warn = groupWarning(winner, rSize);
   if(warn){
     const box=document.createElement('div');
     box.innerHTML = warn;
     box.style.marginTop='10px';
     if(rMode==='slot') spinZone.appendChild(box);
-    else if(rMode==='wheel') wheelResult.appendChild(box);
-    else document.querySelector('#boardTrack .board-center').appendChild(box);
+    else wheelResult.appendChild(box);
   }
   spinBtn.disabled=false;
   spinBtn.style.display='block';
@@ -1280,7 +1197,7 @@ function advanceToStage3(presetPool){
   spinBtnMode='spin';
   if(stagePool.length===0){
     const msg='<div class="spin-idle">이 카테고리엔 등록된 가게가 없어요. 카테고리를 다시 골라주세요</div>';
-    if(rMode==='slot') spinZone.innerHTML=msg; else if(rMode==='wheel') wheelResult.innerHTML=msg; else document.querySelector('#boardTrack .board-center').innerHTML=`<div class="btitle" style="font-size:.85rem">이 카테고리엔<br>등록된 가게가 없어요</div>`;
+    if(rMode==='slot') spinZone.innerHTML=msg; else wheelResult.innerHTML=msg;
   }
 }
 let spinBtnMode='spin', clickLocked=false; // 'spin' | 'next' | 'confirm'
@@ -1294,6 +1211,10 @@ document.getElementById('spinBtn').addEventListener('click',()=>{
 const slotLever=document.getElementById('slotLever');
 function triggerSlotSpin(){
   if(spinning || clickLocked) return;
+  if(!__autoSlotMode && stage===1 && !catRouletteItems().length){
+    rDesc.textContent='⚠️ 카테고리·가격대·특정가게 중 하나는 골라야 레버를 당길 수 있어요';
+    return;
+  }
   playLeverPull();
   if(__autoSlotMode) spinSlotAuto(window.__mealCats); else doSpin();
 }
