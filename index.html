@@ -45,6 +45,10 @@ h1 em{font-style:normal;color:var(--us)}
   box-shadow:0 3px 0 var(--reg-deep),0 5px 12px rgba(0,0,0,.25);transition:transform .1s}
 .rb-btn small{font-weight:600;font-size:.68rem;opacity:.9}
 .rb-btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--reg-deep),0 2px 6px rgba(0,0,0,.2)}
+.rb-custom{width:100%;margin-top:9px;border:2px solid var(--gold);border-radius:var(--r-md);
+  background:linear-gradient(155deg,#4A3580,#3C2A6E);color:var(--gold-bg);font:inherit;font-weight:800;font-size:.88rem;
+  padding:11px;cursor:pointer;box-shadow:0 3px 0 #2A1E4E,0 5px 12px rgba(0,0,0,.25);transition:transform .1s}
+.rb-custom:active{transform:translateY(2px);box-shadow:0 1px 0 #2A1E4E,0 2px 6px rgba(0,0,0,.2)}
 .dicebtn:active{transform:scale(.96)}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:8px 0 1px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
@@ -93,7 +97,6 @@ h1 em{font-style:normal;color:var(--us)}
     border-right:none;border-radius:var(--r-lg) var(--r-lg) 0 0;box-shadow:0 -10px 32px rgba(33,28,21,.2);
     height:34vh;max-height:34vh;overflow-y:auto;display:none;transition:height .25s ease,max-height .25s ease}
   #panel.open{display:block;animation:up .2s ease}
-  #panel.expanded{height:82vh;max-height:82vh}
 }
 @keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
 
@@ -126,11 +129,6 @@ h1 em{font-style:normal;color:var(--us)}
 .expandbtn.open .arrow{transform:rotate(180deg)}
 .more-detail{display:none;margin-top:5px}
 .more-detail.open{display:block}
-.expandtoggle-mobile{display:none}
-@media (max-width:759px){
-  .expandtoggle-mobile{display:block;position:absolute;left:50%;top:7px;transform:translateX(-50%);z-index:20;
-    border:none;background:#E1D6BE;color:#5A5245;border-radius:999px;padding:4px 15px;font:inherit;font-size:.68rem;font-weight:700;cursor:pointer}
-}
 .s-links{margin-top:13px;display:flex;gap:7px;flex-wrap:wrap}
 .s-links button{font:inherit;font-size:.8rem;font-weight:700;border-radius:var(--r-sm);padding:10px 14px;border:1.5px solid transparent;cursor:pointer}
 .kakao{background:#FEE500;color:#191600}.nvr{background:#03C75A;color:#fff}.ctlink{background:#3C2A6E;color:#fff}
@@ -227,6 +225,17 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
   font:inherit;font-weight:800;font-size:1rem;padding:15px;cursor:pointer;box-shadow:var(--sh-2)}
 .spinbtn:disabled{opacity:.5;cursor:default;box-shadow:none}
 .spinbtn:active:not(:disabled){transform:scale(.98)}
+.result-summary{margin-top:12px;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-md);padding:12px 14px}
+.rs-route{display:flex;align-items:center;gap:8px;justify-content:center}
+.rs-pin{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.68rem;color:var(--sub);font-weight:700}
+.rs-pin .ico{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.rs-pin.office .ico{background:var(--blue);color:#fff}
+.rs-pin.dest .ico{background:var(--reg);color:#fff}
+.rs-arrow{flex:1;position:relative;height:2px;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 11px);margin:0 4px 18px}
+.rs-arrow::after{content:'▶';position:absolute;right:-4px;top:50%;transform:translateY(-50%);color:var(--sub);font-size:.65rem}
+.rs-meta{text-align:center;margin-top:8px;font-size:.84rem;font-weight:700;color:var(--blue)}
+.rs-name{text-align:center;font-family:'Black Han Sans',sans-serif;font-size:1.05rem;margin-top:9px;color:var(--ink)}
+.rs-memo{text-align:center;font-size:.78rem;color:var(--sub);margin-top:4px;line-height:1.5}
 .reroll-line{text-align:center;margin-top:11px;font-size:.78rem;color:var(--sub)}
 .reroll-line button{border:none;background:none;color:var(--reg-deep);font-weight:700;cursor:pointer;text-decoration:underline;font:inherit}
 
@@ -297,10 +306,10 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
       <button class="rb-btn" data-meal="dinner">🍻 저녁<br><small>아무거나</small></button>
       <button class="rb-btn" data-meal="dessert">🍰 후식<br><small>아무거나</small></button>
     </div>
+    <button class="rb-custom" id="diceOpen">🎯 직접 골라서 돌리기</button>
   </div>
   <div class="headrow">
     <div class="searchbar"><span class="ico">🔍</span><input id="q" type="search" placeholder="가게·메뉴·후기 검색" autocomplete="off"><button class="clr" id="qclr">✕</button></div>
-    <button class="dicebtn" id="diceOpen">🎯 직접 골라 돌리기</button>
   </div>
   <div class="chips" id="chips"></div>
   <div class="chips timechips" id="timeChips"></div>
@@ -366,6 +375,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
     </div>
     <div class="wheel-result" id="wheelResult" style="display:none"></div>
     <div class="boardtrack" id="boardTrack"></div>
+    <div class="result-summary" id="resultSummary" style="display:none"></div>
     <button class="spinbtn" id="spinBtn">🎲 돌리기</button>
     <div class="reroll-line" id="rerollLine" style="display:none">
       마음에 안 드시나요? <button id="rerollBtn">다시 돌리기</button>
@@ -642,7 +652,6 @@ function openPanel(p){
   const memoText = p.memo || p.usr || '';
   panel.innerHTML=`
     <div class="panel-close"><span>${p.n}</span><button onclick="closePanel()">✕</button></div>
-    <button class="expandtoggle-mobile" id="expandToggleMobile">펼치기 ▾</button>
     <div class="sheet-inner">
     <div class="grab"></div>
     <div class="s-head">
@@ -685,8 +694,8 @@ function openPanel(p){
   const expBtn=panel.querySelector('#expandBtn'), moreDiv=panel.querySelector('#moreDetail');
   expBtn.onclick=()=>{ const open=moreDiv.classList.toggle('open'); expBtn.classList.toggle('open',open);
     expBtn.querySelector('span').textContent = open? '접기':'더 보기 (웨이팅·후기·캐치테이블)'; };
-  const expMobile=panel.querySelector('#expandToggleMobile');
-  expMobile.onclick=()=>{ const ex=panel.classList.toggle('expanded'); expMobile.textContent = ex? '접기 ▴':'펼치기 ▾'; };
+  setupSheetDrag();
+  panel.style.height=''; panel.style.maxHeight=''; panel.style.transition=''; // 새 가게 열 때마다 기본(34vh)부터 시작
   panel.classList.add('open');
   requestAnimationFrame(()=>{
     setTimeout(()=>{
@@ -697,13 +706,58 @@ function openPanel(p){
 
 function closePanel(){
   panel.classList.remove('open');
-  panel.classList.remove('expanded');
+  panel.style.height=''; panel.style.transition='';
   bodyEl.classList.remove('has-panel');
   curOpen=null;
   stopRouteGlow();
   if(curLines){curLines.forEach(l=>l.setMap(null));curLines=[];}
   applyFilter(); // 숨겼던 핀들 다시 표시 (현재 카테고리·검색 조건 기준으로 복원)
   requestAnimationFrame(()=>{ setTimeout(()=>{ if(map) kakao.maps.event.trigger(map,'resize'); },80); });
+}
+// 모바일 바텀시트: grab 핸들을 드래그해서 높이 조절, 놓으면 가까운 스냅 지점(34/58/82%)으로 붙음
+const SHEET_SNAPS=[.34,.58,.82];
+function setupSheetDrag(){
+  if(isDesktop()) return;
+  const grab=panel.querySelector('.grab'), closeBar=panel.querySelector('.panel-close');
+  const handles=[grab, closeBar].filter(Boolean);
+  let dragging=false, startY=0, startH=0;
+  function vh(){ return window.innerHeight; }
+  function curHeightPx(){
+    const cs=panel.style.height;
+    if(cs && cs.endsWith('px')) return parseFloat(cs);
+    return vh()*SHEET_SNAPS[0];
+  }
+  function onDown(e){
+    dragging=true; startY=(e.touches?e.touches[0].clientY:e.clientY); startH=panel.getBoundingClientRect().height;
+    panel.style.transition='none';
+    document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onUp);
+    document.addEventListener('touchmove',onMove,{passive:false}); document.addEventListener('touchend',onUp);
+  }
+  function onMove(e){
+    if(!dragging) return;
+    e.preventDefault && e.preventDefault();
+    const y=(e.touches?e.touches[0].clientY:e.clientY);
+    const dy=startY-y; // 위로 끌면 커짐
+    let newH=startH+dy;
+    newH=Math.max(vh()*0.18, Math.min(vh()*0.92, newH));
+    panel.style.height=newH+'px'; panel.style.maxHeight=newH+'px';
+  }
+  function onUp(){
+    if(!dragging) return;
+    dragging=false;
+    document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp);
+    document.removeEventListener('touchmove',onMove); document.removeEventListener('touchend',onUp);
+    const curPct=panel.getBoundingClientRect().height/vh();
+    let nearest=SHEET_SNAPS[0], minDiff=Infinity;
+    SHEET_SNAPS.forEach(s=>{ const d=Math.abs(s-curPct); if(d<minDiff){minDiff=d; nearest=s;} });
+    panel.style.transition='height .22s ease,max-height .22s ease';
+    panel.style.height=(vh()*nearest)+'px'; panel.style.maxHeight=(vh()*nearest)+'px';
+  }
+  handles.forEach(h=>{
+    h.style.cursor='grab'; h.style.touchAction='none';
+    h.addEventListener('mousedown',onDown);
+    h.addEventListener('touchstart',onDown,{passive:true});
+  });
 }
 function kakaoRoute(p){
   const sp=`${OFFICE.lat},${OFFICE.lng}`,ep=`${p.lat},${p.lng}`;
@@ -866,6 +920,7 @@ function resetResultArea(){
     el.querySelector('.mini-val').textContent='?';
   });
   rerollLine.style.display='none'; spinBtn.textContent='🎲 돌리기'; spinBtn.disabled=false; spinBtnMode='spin';
+  document.getElementById('resultSummary').style.display='none';
 }
 const RDIST_OPTS=[{l:"전체",v:0},{l:"🚶 5분 이내",v:5},{l:"🚶 10분 이내",v:10}];
 function buildDistOpts(){
@@ -938,14 +993,13 @@ function doSpin(){
 function spinSlot(pool){
   // 룰렛 모달 안의 슬롯: 카테고리 스테퍼로 고른 조건 안에서 세로 릴 하나로 결과를 뽑음
   spinning=true; spinBtn.disabled=true; rerollLine.style.display='none';
-  slotLever.classList.add('pulled');
   spinMainReel(pool, '');
 }
 
 // ── 완전 자동 슬롯(지도의 "아무거나" 전용) ──
 function spinSlotAuto(allowedCats){
   const catPool = allowedCats && allowedCats.length ? allowedCats : RCATS_ALL;
-  spinning=true; spinBtn.disabled=true; slotLever.classList.add('pulled');
+  spinning=true; spinBtn.disabled=true;
   rerollLine.style.display='none';
   const slots={cat:document.querySelector('[data-slot=cat] .mini-val'),
     price:document.querySelector('[data-slot=price] .mini-val'),
@@ -1029,7 +1083,6 @@ function spinMainReel(pool, relaxNote){
   spinTimer=setTimeout(()=>{
     clearInterval(tickTimer);
     spinning=false; spinBtn.disabled=false;
-    slotLever.classList.remove('pulled');
     celebrateWinner();
     playWinChime();
     if(relaxNote) winner.__relaxNote=relaxNote;
@@ -1174,6 +1227,19 @@ function finishSpin(winner){
   window.__finalWinner = winner;
   rerollLine.style.display='block';
   window.__lastRSize = rSize;
+  // 결과 요약 카드: 회사→가게 약도 + 거리/시간
+  const rs=document.getElementById('resultSummary');
+  const walkTxt = winner.route ? `${Math.max(1,Math.round(winner.route.t/60))}분 · ${winner.route.d}m` : `${Math.max(1,Math.round((winner.straight||0)*1.35/67))}분(추정)`;
+  rs.innerHTML=`
+    <div class="rs-route">
+      <div class="rs-pin office"><div class="ico">🏢</div>회사</div>
+      <div class="rs-arrow"></div>
+      <div class="rs-pin dest"><div class="ico">🍽️</div>${winner.cat||''}</div>
+    </div>
+    <div class="rs-meta">🚶 도보 ${walkTxt}</div>
+    <div class="rs-name">${winner.n}</div>
+    ${winner.memo?`<div class="rs-memo">${winner.memo}</div>`:''}`;
+  rs.style.display='block';
   const warn = groupWarning(winner, rSize);
   if(warn){
     const box=document.createElement('div');
@@ -1229,11 +1295,12 @@ const slotLever=document.getElementById('slotLever');
 function triggerSlotSpin(){
   if(spinning || clickLocked) return;
   playLeverPull();
-  setTimeout(()=>{ if(__autoSlotMode) spinSlotAuto(window.__mealCats); else doSpin(); },150);
+  if(__autoSlotMode) spinSlotAuto(window.__mealCats); else doSpin();
 }
-// 드래그(포인터를 아래로 끌어내림)로만 작동 - 그냥 클릭은 무시
+// 드래그(포인터를 아래로 끌어내림) → 놓으면 즉시 위로 튕겨 올라가며 "차캉" + 그 순간 스핀 시작(카지노 레버 물리)
 let leverDragging=false, leverStartY=0;
-const LEVER_PULL_PX=54; // 이 정도 아래로 끌어야 "당겨짐"으로 인정
+const LEVER_PULL_PX=54; // 처음 당길 땐 이 정도 끌어야 인정
+const LEVER_REPULL_PX=10; // 이미 결과가 나온 뒤엔 살짝만 건드려도 재추첨(버튼 안 눌러도 바로 되게)
 slotLever.addEventListener('pointerdown',e=>{
   if(rMode!=='slot' || spinning || clickLocked) return;
   leverDragging=true; leverStartY=e.clientY;
@@ -1247,20 +1314,35 @@ slotLever.addEventListener('pointermove',e=>{
   knob.style.transition='none';
   knob.style.top=Math.min(dy,maxPull)+'px';
 });
+function releaseLever(dy){
+  const knob=slotLever.querySelector('.knob');
+  knob.style.transition='top .18s cubic-bezier(.3,.9,.4,1.3)'; // 확 튕겨 올라가는 느낌
+  knob.style.top='0px';
+  slotLever.classList.remove('pulled');
+  const threshold = window.__finalWinner ? LEVER_REPULL_PX : LEVER_PULL_PX;
+  if(dy>=threshold) triggerSlotSpin(); // 튕겨 올라가는 순간 "차캉"과 함께 스핀 시작
+}
 slotLever.addEventListener('pointerup',e=>{
   if(!leverDragging) return;
   leverDragging=false;
   const dy=Math.max(0, e.clientY-leverStartY);
-  const knob=slotLever.querySelector('.knob');
-  knob.style.transition='';
-  knob.style.top='';
-  if(dy>=LEVER_PULL_PX){
-    slotLever.classList.add('pulled');
-    triggerSlotSpin();
-  }
+  releaseLever(dy);
 });
 slotLever.addEventListener('pointercancel',()=>{ leverDragging=false; });
-document.getElementById('rerollBtn').onclick=()=>{ if(rMode==='slot') (__autoSlotMode?spinSlotAuto(window.__mealCats):doSpin()); else doSpin(); };
+// 결과가 이미 나온 상태에서 드래그 없이 그냥 클릭(탭)만 해도 바로 재추첨 - "다시 돌리기" 안 눌러도 되게
+slotLever.addEventListener('click',()=>{
+  if(rMode!=='slot' || spinning || clickLocked) return;
+  if(!window.__finalWinner) return; // 첫 스핀은 반드시 드래그로(실수 방지), 재추첨만 탭 허용
+  triggerSlotSpin();
+});
+document.getElementById('rerollBtn').onclick=()=>{
+  // "다시 돌리기" = 레버를 원위치로 완전히 리셋만 해줌. 실제 스핀은 유저가 레버를 직접 다시 당겨야 시작(레버 조작 일관성 유지)
+  slotLever.classList.remove('pulled');
+  const knob=slotLever.querySelector('.knob');
+  knob.style.transition=''; knob.style.top='';
+  resetResultArea();
+  if(rMode!=='slot') doSpin();
+};
 
 /* SDK 로드 타임아웃 */
 setTimeout(()=>{if(!window.kakao||!kakao.maps||!map)initKakao();},300);
