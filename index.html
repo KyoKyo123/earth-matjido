@@ -84,13 +84,16 @@ h1 em{font-style:normal;color:var(--us)}
 .rb-custom .rbc-sub{display:block;font-size:.68rem;font-weight:700;color:#6B4A10;margin-top:2px}
 .rb-custom:active{transform:translateY(3px);box-shadow:0 1px 0 #9A6E0A,0 2px 6px rgba(0,0,0,.25)}
 .dicebtn:active{transform:scale(.96)}
-.chipwrap{position:relative;padding-right:26px}
+.chipwrap{position:relative;padding:0 26px}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:8px 0 1px;scrollbar-width:none;scroll-behavior:smooth}
 .chips::-webkit-scrollbar{display:none}
-.chipnext{position:absolute;right:0;top:6px;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);
+.chipnext{position:absolute;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);
   background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;
   opacity:1;transition:opacity .15s,background .12s;z-index:2;box-shadow:var(--sh-1);padding:0}
-.chipnext::after{content:'›';font-size:.85rem;font-weight:800;color:var(--sub-deep)}
+.chipnext.next{right:0}
+.chipnext.prev{left:0}
+.chipnext.next::after{content:'›';font-size:.85rem;font-weight:800;color:var(--sub-deep)}
+.chipnext.prev::after{content:'‹';font-size:.85rem;font-weight:800;color:var(--sub-deep)}
 .chipnext:active{background:var(--line-soft)}
 .chipnext.hide{opacity:0;pointer-events:none}
 .chip{flex:0 0 auto;font:inherit;font-size:.78rem;font-weight:700;padding:6px 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);color:var(--sub);cursor:pointer;white-space:nowrap;transition:background .12s,border-color .12s,color .12s}
@@ -360,9 +363,21 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
   <div class="headrow">
     <div class="searchbar"><span class="ico">🔍</span><input id="q" type="search" placeholder="가게·메뉴·후기 검색" autocomplete="off"><button class="clr" id="qclr">✕</button></div>
   </div>
-  <div class="chipwrap"><div class="chips" id="chips"></div><button class="chipnext" id="chipsNext" title="더 보기" aria-label="더 보기"></button></div>
-  <div class="chipwrap"><div class="chips timechips" id="timeChips"></div><button class="chipnext" id="timeChipsNext" title="더 보기" aria-label="더 보기"></button></div>
-  <div class="chipwrap"><div class="chips pricechips" id="priceChips"></div><button class="chipnext" id="priceChipsNext" title="더 보기" aria-label="더 보기"></button></div>
+  <div class="chipwrap">
+    <button class="chipnext prev" id="chipsPrev" title="이전" aria-label="이전"></button>
+    <div class="chips" id="chips"></div>
+    <button class="chipnext next" id="chipsNext" title="더 보기" aria-label="더 보기"></button>
+  </div>
+  <div class="chipwrap">
+    <button class="chipnext prev" id="timeChipsPrev" title="이전" aria-label="이전"></button>
+    <div class="chips timechips" id="timeChips"></div>
+    <button class="chipnext next" id="timeChipsNext" title="더 보기" aria-label="더 보기"></button>
+  </div>
+  <div class="chipwrap">
+    <button class="chipnext prev" id="priceChipsPrev" title="이전" aria-label="이전"></button>
+    <div class="chips pricechips" id="priceChips"></div>
+    <button class="chipnext next" id="priceChipsNext" title="더 보기" aria-label="더 보기"></button>
+  </div>
   <button class="mylikesbtn" id="myLikesBtn">👍 나의 따봉 <span id="myLikesCount"></span></button>
   <footer>구글맵 평점·좌표 2026-07 / US후기=사내 노션. 지도·로드뷰=카카오. 웨이팅은 당일 앱 확인 필수.</footer>
 </header>
@@ -683,18 +698,19 @@ function buildOfficeTabs(){
 }
 function setupChipFade(chipsEl){
   const wrap=chipsEl.closest('.chipwrap'); if(!wrap) return;
-  const btn=wrap.querySelector('.chipnext'); if(!btn) return;
+  const nextBtn=wrap.querySelector('.chipnext.next'), prevBtn=wrap.querySelector('.chipnext.prev');
+  if(!nextBtn || !prevBtn) return;
   function update(){
     const overflowing = chipsEl.scrollWidth > chipsEl.clientWidth + 2;
+    const atStart = chipsEl.scrollLeft <= 2;
     const atEnd = chipsEl.scrollLeft + chipsEl.clientWidth >= chipsEl.scrollWidth - 2;
-    btn.classList.toggle('hide', !overflowing || atEnd);
+    nextBtn.classList.toggle('hide', !overflowing || atEnd);
+    prevBtn.classList.toggle('hide', !overflowing || atStart);
   }
   chipsEl.addEventListener('scroll', update);
   window.addEventListener('resize', update);
-  btn.onclick=()=>{
-    // 실제로 다음 칩들이 보이도록 오른쪽으로 스크롤 (클릭해도 아무 일 없던 문제 수정 - 이제 진짜 "다음" 버튼)
-    chipsEl.scrollBy({left: 140, behavior:'smooth'});
-  };
+  nextBtn.onclick=()=>{ chipsEl.scrollBy({left: 140, behavior:'smooth'}); };
+  prevBtn.onclick=()=>{ chipsEl.scrollBy({left: -140, behavior:'smooth'}); };
   setTimeout(update, 50); // 칩이 다 그려진 뒤 초기 상태 계산
 }
 function buildChips(){
