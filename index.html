@@ -977,7 +977,7 @@ qc.onclick=()=>{qi.value="";q="";qc.classList.remove('on');applyFilter();qi.focu
 const RCATS_ALL=["한식","일식","중식","양식","아시안","고기","치킨·술집","카페·베이커리"];
 const MEAL_CATS={
   lunch: RCATS_ALL.filter(c=>!["치킨·술집","카페·베이커리"].includes(c)), // 점심엔 술집·카페 제외
-  dinner: RCATS_ALL, // 저녁은 전체(치킨·술집 포함)
+  dinner: RCATS_ALL.filter(c=>c!=="카페·베이커리"), // 저녁엔 카페·베이커리 제외(치킨·술집은 포함)
   dessert: ["카페·베이커리"], // 후식은 카페·베이커리만
 };
 const MEAL_LABEL={lunch:"점심",dinner:"저녁",dessert:"후식"};
