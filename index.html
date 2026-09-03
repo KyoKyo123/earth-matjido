@@ -490,7 +490,7 @@ function buildMap(){
   drawOfficeMarkers();
   buildMarkers(); buildChips(); buildOfficeTabs(); applyFilter();
   kakao.maps.event.addListener(map,'click',closePanel);
-  window.addEventListener('resize',()=>{ if(map) setTimeout(()=>kakao.maps.event.trigger(map,'resize'),50); });
+  window.addEventListener('resize',()=>{ if(map) setTimeout(()=>map.relayout(),50); });
 }
 
 const CATS=["전체","US인증","US+예약가능","한식","일식","중식","양식","아시안","인도·커리","고기","치킨·술집","샐러드·가볍게","카페·베이커리"];
@@ -752,7 +752,7 @@ function openPanel(p){
   panel.classList.add('open');
   requestAnimationFrame(()=>{
     setTimeout(()=>{
-      if(map){ kakao.maps.event.trigger(map,'resize'); map.setBounds(bounds); }
+      if(map){ map.relayout(); map.setBounds(bounds); }
     },80);
   });
 }
@@ -765,7 +765,7 @@ function closePanel(){
   stopRouteGlow();
   if(curLines){curLines.forEach(l=>l.setMap(null));curLines=[];}
   applyFilter(); // 숨겼던 핀들 다시 표시 (현재 카테고리·검색 조건 기준으로 복원)
-  requestAnimationFrame(()=>{ setTimeout(()=>{ if(map) kakao.maps.event.trigger(map,'resize'); },80); });
+  requestAnimationFrame(()=>{ setTimeout(()=>{ if(map) map.relayout(); },80); });
 }
 // 모바일 바텀시트: grab 핸들을 드래그해서 높이 조절, 놓으면 가까운 스냅 지점(34/58/82%)으로 붙음
 const SHEET_SNAPS=[.34,.58,.82];
@@ -827,7 +827,7 @@ document.getElementById('hdrToggle').onclick=function(){
   this.querySelector('.htxt').textContent = collapsed? '지도 넓게 보기 해제':'검색·룰렛 접기';
   // 헤더 높이 변화 애니메이션(.25s) 동안 지도 컨테이너 크기가 계속 바뀌므로,
   // 중간에도 여러 번 리사이즈를 걸어줘야 카카오맵이 타일 깨짐 없이 따라옴
-  const kick=()=>{ if(map) kakao.maps.event.trigger(map,'resize'); };
+  const kick=()=>{ if(map) map.relayout(); };
   requestAnimationFrame(kick);
   [60,130,200,280,340].forEach(t=>setTimeout(kick,t));
   hdr.addEventListener('transitionend',kick,{once:true});
