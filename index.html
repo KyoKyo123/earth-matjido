@@ -168,9 +168,9 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .catcount-row .stepbtn:active{background:var(--reg);color:#fff}
 .catcount-row .cnum{width:20px;text-align:center;font-weight:800;font-size:.95rem}
 .catcount-row.active{border-color:var(--reg);background:#FFF4EC}
-.catcount-row .jumpbtn{align-self:flex-start;border:none;background:none;color:var(--ct);border-radius:8px;
-  font:inherit;font-size:.72rem;font-weight:700;padding:4px 2px;cursor:pointer;white-space:nowrap;text-decoration:underline;transition:color .12s}
-.catcount-row .jumpbtn:active{color:var(--reg)}
+.catcount-row .jumpbtn{align-self:flex-start;border:1.5px solid var(--ct);background:var(--surface);color:var(--ct);border-radius:8px;
+  font:inherit;font-size:.7rem;font-weight:700;padding:5px 11px;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s}
+.catcount-row .jumpbtn:active{background:var(--ct);color:#fff}
 .searchpin-row{display:flex;gap:7px;margin-bottom:8px}
 .searchpin-row input{flex:1;font:inherit;font-size:.84rem;padding:9px 11px;border-radius:var(--r-md);border:1.5px solid var(--line);background:var(--surface);outline:none}
 .searchpin-row input:focus{border-color:var(--reg)}
@@ -189,7 +189,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 /* 슬롯머신: 아치형 카지노 캐비닛(참고이미지 스타일) + 세로 3릴 + 오른쪽 당기는 레버 */
 .slotcabinet{position:relative;border-radius:24px 24px 16px 16px;padding:28px 58px 18px 20px;margin:26px 0 15px;
   background:linear-gradient(165deg,#D42A1C,#8E1710);box-shadow:0 4px 0 #6E1109,0 10px 24px rgba(0,0,0,.4);
-  border:4px solid #E8B23C}
+  border:4px solid #E8B23C;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 .slotcabinet::before{content:'WIN';position:absolute;left:50%;top:-16px;transform:translateX(-50%);
   background:linear-gradient(155deg,#FCE07A,#C89320);color:#7A3C00;font-family:'Black Han Sans',sans-serif;
   font-size:.92rem;line-height:1;letter-spacing:.14em;padding:6px 22px 5px;border-radius:20px;
@@ -226,7 +226,8 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 .slotcabinet .lamp:nth-child(even){animation-delay:.55s}
 @keyframes lampBlink{0%,100%{opacity:1}50%{opacity:.25}}
 /* 오른쪽 레버 */
-.slotlever{position:absolute;right:10px;top:16px;bottom:16px;width:34px;display:flex;justify-content:center;cursor:pointer;touch-action:none;z-index:10}
+.slotlever{position:absolute;right:10px;top:16px;bottom:16px;width:34px;display:flex;justify-content:center;cursor:pointer;touch-action:none;z-index:10;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .slotlever .rail{position:absolute;top:6px;bottom:6px;width:8px;border-radius:5px;background:linear-gradient(90deg,#7A4A1E,#B9843F,#7A4A1E)}
 .slotlever .knob{position:absolute;top:0;left:50%;transform:translateX(-50%);width:30px;height:30px;border-radius:50%;
   background:radial-gradient(circle at 35% 30%,#FF6B5A,#C4291A 70%);box-shadow:0 3px 8px rgba(0,0,0,.5),inset 0 2px 3px rgba(255,255,255,.5);
@@ -1168,13 +1169,20 @@ let pendingCatWinner=null;
 function finishSpin(winner){
   if(winner.__isCat && winner.__filterType!=='pin'){
     pendingCatWinner = winner;
-    // 슬롯·원판 둘 다 결과를 잠깐 보여준 뒤 자동으로 다음 판(가게 뽑기)까지 이어서 진행 - 별도 버튼 클릭 불필요
-    rDesc.textContent = `🎉 "${winner.n}" 당첨! 이어서 가게를 뽑을게요`;
-    lockClicksBriefly(1250);
-    setTimeout(()=>{
-      advanceToStage3();
-      setTimeout(()=>{ if(stagePool.length) doSpin(); },250);
-    },1150);
+    if(rMode==='wheel'){
+      // 원판: 결과를 잠깐 보여준 뒤 자동으로 다음 판까지 이어서 진행(버튼이 따로 없으므로)
+      rDesc.textContent = `🎉 "${winner.n}" 당첨! 이어서 가게를 뽑을게요`;
+      lockClicksBriefly(1250);
+      setTimeout(()=>{
+        advanceToStage3();
+        setTimeout(()=>{ if(stagePool.length) doSpin(); },250);
+      },1150);
+      return;
+    }
+    // 슬롯: 다음 판은 반드시 사용자가 레버를 다시 당겨야 시작 (지 혼자 돌아가지 않게)
+    rDesc.textContent = `🎉 "${winner.n}" 당첨! 레버를 다시 당겨서 가게를 뽑아보세요`;
+    lockClicksBriefly(600);
+    setTimeout(()=>{ advanceToStage3(); },900);
     return;
   }
   // ── 최종 가게 확정 (스테이지2 종료 또는 스테이지1에서 특정가게가 바로 당첨된 경우) ──
@@ -1231,7 +1239,9 @@ function advanceToStage3(presetPool){
   catStepSec.style.display='none'; // 스테이지1 스테퍼는 계속 숨긴 채로 - 다시 보이면 레이아웃이 커져서 화면이 튐
   resetResultArea(); // 릴/원판만 초기화, catStepSec은 건드리지 않음
   stageLabel.textContent=`STAGE 2 · "${winner.n}" 가게 뽑는 중`; stageLabel.classList.add('on');
-  rDesc.textContent=`"${winner.n}" 안에서 어디로 갈지 뽑아보세요`;
+  rDesc.textContent = rMode==='slot'
+    ? `"${winner.n}" 안에서 뽑을게요 — 레버를 당겨주세요`
+    : `"${winner.n}" 안에서 어디로 갈지 뽑아보세요`;
   spinBtn.textContent='🎲 가게 뽑기';
   spinBtn.disabled = stagePool.length===0;
   spinBtnMode='spin';
