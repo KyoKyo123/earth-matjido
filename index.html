@@ -34,6 +34,10 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none}
 .hdrtoggle.up .harrow{transform:rotate(180deg)}
 .titlerow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .officetabs{display:flex;gap:5px;margin-top:9px;background:var(--line-soft);border-radius:var(--r-md);padding:4px}
+.mylikesbtn{margin-top:9px;width:100%;border:1.5px solid var(--us);background:var(--us-bg);color:#0A6B3A;
+  border-radius:var(--r-md);padding:9px;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;transition:background .12s,color .12s}
+.mylikesbtn.on{background:var(--us);color:#fff}
+.mylikesbtn:active{transform:scale(.98)}
 .officebtn{flex:1;border:none;background:none;border-radius:10px;padding:8px 4px;font:inherit;font-size:.76rem;font-weight:800;color:var(--sub);cursor:pointer;transition:background .15s,color .15s;line-height:1.35}
 .officebtn small{display:block;font-size:.6rem;font-weight:600;opacity:.75}
 .officebtn.on{background:var(--blue);color:#fff;box-shadow:var(--sh-1)}
@@ -333,6 +337,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
   <div class="chips" id="chips"></div>
   <div class="chips timechips" id="timeChips"></div>
   <div class="chips pricechips" id="priceChips"></div>
+  <button class="mylikesbtn" id="myLikesBtn">👍 나의 따봉 <span id="myLikesCount"></span></button>
 </header>
 <div id="body">
   <div id="panel"></div>
@@ -419,7 +424,7 @@ async function fetchVoteCounts(shop){
     const { data, error } = await sb.from('votes').select('vote,voter').eq('shop', shop);
     if(error || !data) return {up:0,down:0,mine:0};
     let up=0,down=0,mine=0;
-    data.forEach(r=>{ if(r.vote===1) up++; else down++; if(r.voter===VOTER_ID) mine=r.vote; });
+    data.forEach(r=>{ if(r.vote===1) up++; else if(r.vote===-1) down++; if(r.voter===VOTER_ID) mine=r.vote; });
     return {up,down,mine};
   }catch(e){ return {up:0,down:0,mine:0}; }
 }
@@ -433,6 +438,14 @@ async function castVote(shop, vote){
     if(error) return null;
     return true;
   }catch(e){ return null; }
+}
+async function fetchMyLikedShops(){
+  if(!sb) return [];
+  try{
+    const { data, error } = await sb.from('votes').select('shop').eq('voter', VOTER_ID).eq('vote', 1);
+    if(error || !data) return [];
+    return data.map(r=>r.shop);
+  }catch(e){ return []; }
 }
 </script>
 <script>
@@ -531,6 +544,28 @@ function switchOffice(key){
   applyFilter();
   buildCatStepper(); // 거리 기준이 바뀌었으니 룰렛 스테퍼 재고 표시도 갱신
 }
+document.getElementById('myLikesBtn').onclick=async function(){
+  const btn=this;
+  if(myLikesFilter){
+    // 다시 누르면 해제하고 전체 화면으로 복귀
+    myLikesFilter=false;
+    btn.classList.remove('on');
+    document.getElementById('myLikesCount').textContent='';
+    closePanel();
+    applyFilter();
+    return;
+  }
+  if(!sb){ alert('투표 기능을 불러오지 못했어요. 인터넷 연결을 확인해주세요.'); return; }
+  btn.disabled=true; btn.textContent='👍 불러오는 중...';
+  const shops=await fetchMyLikedShops();
+  myLikedShops=new Set(shops);
+  myLikesFilter=true;
+  btn.classList.add('on');
+  btn.disabled=false;
+  btn.innerHTML=`👍 나의 따봉 <span id="myLikesCount">${shops.length}곳 · 탭하면 해제</span>`;
+  closePanel();
+  applyFilter();
+};
 function buildMap(){
   map=new kakao.maps.Map(document.getElementById('map'),{
     center:new kakao.maps.LatLng(OFFICE.lat,OFFICE.lng), level:4 });
@@ -550,7 +585,16 @@ P.forEach(p=>{
   p.dist=rt?rt.d:p.straight;
   p.walk=rt?Math.max(1,Math.round(rt.t/60)):Math.max(1,Math.round(p.straight*1.35/67));
 });
+let myLikesFilter=false, myLikedShops=new Set();
+function clearMyLikesFilter(){
+  if(!myLikesFilter) return;
+  myLikesFilter=false;
+  const btn=document.getElementById('myLikesBtn');
+  btn.classList.remove('on');
+  btn.innerHTML='👍 나의 따봉 <span id="myLikesCount"></span>';
+}
 function matchCat(p){
+  if(myLikesFilter) return myLikedShops.has(p.n); // 나의 따봉 모드: 다른 조건 다 무시하고 이것만
   const c=active==="전체"?true:active==="US인증"?!!p.us:active==="US+예약가능"?!!p.gold:p.cat===active;
   if(!c)return false;
   if(priceFilter && !(p.tier||[]).includes(priceFilter)) return false;
@@ -616,7 +660,7 @@ function buildChips(){
   CATS.forEach(c=>{const b=document.createElement('button');
     b.className='chip'+(c==='US인증'?' us':'')+(c==='US+예약가능'?' ctc':'')+(c==='전체'?' on':'');
     b.textContent=c==='US인증'?'🟢 US인증':c==='US+예약가능'?'🔵 US+예약가능':c;
-    b.onclick=()=>{active=c;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
+    b.onclick=()=>{clearMyLikesFilter();active=c;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
     wrap.appendChild(b);});
   buildTimeChips();
 }
@@ -626,7 +670,7 @@ function buildTimeChips(){
   TIME_OPTS.forEach(t=>{const b=document.createElement('button');
     b.className='chip time'+(t.v===0?' on':'');
     b.textContent=t.l;
-    b.onclick=()=>{timeFilter=t.v;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
+    b.onclick=()=>{clearMyLikesFilter();timeFilter=t.v;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
     wrap.appendChild(b);});
   buildPriceChips();
 }
@@ -636,7 +680,7 @@ function buildPriceChips(){
   PRICE_OPTS.forEach(t=>{const b=document.createElement('button');
     b.className='chip price'+(t.v===0?' on':'');
     b.textContent=t.l;
-    b.onclick=()=>{priceFilter=t.v;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
+    b.onclick=()=>{clearMyLikesFilter();priceFilter=t.v;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
     wrap.appendChild(b);});
 }
 function buildMarkers(){
@@ -734,13 +778,18 @@ function setupVoteWidget(els, shopName){
     upBtn.disabled=false; downBtn.disabled=false;
   });
   async function handleVote(v){
+    // 이미 그 버튼이 선택된 상태에서 다시 누르면 취소(0), 아니면 그 값으로 변경
+    const isCancel = (v===1 && upBtn.classList.contains('on')) || (v===-1 && downBtn.classList.contains('on'));
+    const newVote = isCancel ? 0 : v;
     upBtn.disabled=true; downBtn.disabled=true;
-    const hadOpposite = v===1 ? downBtn.classList.contains('on') : upBtn.classList.contains('on');
     let u=parseInt(upCount.textContent)||0, d=parseInt(downCount.textContent)||0;
-    if(v===1){ u++; if(hadOpposite) d--; upBtn.classList.add('on'); downBtn.classList.remove('on'); }
-    else{ d++; if(hadOpposite) u--; downBtn.classList.add('on'); upBtn.classList.remove('on'); }
+    const wasUp=upBtn.classList.contains('on'), wasDown=downBtn.classList.contains('on');
+    if(wasUp) u--; if(wasDown) d--; // 이전 상태 제거
+    if(newVote===1) u++; else if(newVote===-1) d++; // 새 상태 반영(0이면 아무것도 안 더함=취소)
     upCount.textContent=u; downCount.textContent=d;
-    const ok = await castVote(shopName, v);
+    upBtn.classList.toggle('on', newVote===1);
+    downBtn.classList.toggle('on', newVote===-1);
+    const ok = await castVote(shopName, newVote);
     if(!ok){
       const real = await fetchVoteCounts(shopName);
       upCount.textContent=real.up; downCount.textContent=real.down;
@@ -748,8 +797,8 @@ function setupVoteWidget(els, shopName){
     }
     upBtn.disabled=false; downBtn.disabled=false;
   }
-  upBtn.onclick=()=>{ if(!upBtn.classList.contains('on')) handleVote(1); };
-  downBtn.onclick=()=>{ if(!downBtn.classList.contains('on')) handleVote(-1); };
+  upBtn.onclick=()=>handleVote(1);
+  downBtn.onclick=()=>handleVote(-1);
 }
 function openPanel(p){
   curOpen=p;
@@ -793,7 +842,7 @@ function openPanel(p){
     ${memoText?`<div class="core-memo">${memoText}</div>`:''}
     <button class="menubtn" id="menuBtn">📷 사진·메뉴·가격 보기</button>
     <div class="votewidget" id="voteWidget" data-shop="${p.n.replace(/"/g,'&quot;')}">
-      <span class="vlabel">어스 추천?</span>
+      <span class="vlabel">어스 추천/비추천</span>
       <button class="votebtn up" id="voteUpBtn">👍 <span class="vcount" id="voteUpCount">–</span></button>
       <button class="votebtn down" id="voteDownBtn">👎 <span class="vcount" id="voteDownCount">–</span></button>
     </div>
@@ -919,7 +968,7 @@ document.getElementById('hdrToggle').onclick=function(){
   hdr.addEventListener('transitionend',kick,{once:true});
 };
 const qi=document.getElementById('q'),qc=document.getElementById('qclr');
-qi.addEventListener('input',()=>{q=qi.value.trim().toLowerCase();qc.classList.toggle('on',!!q);closePanel();applyFilter();
+qi.addEventListener('input',()=>{clearMyLikesFilter();q=qi.value.trim().toLowerCase();qc.classList.toggle('on',!!q);closePanel();applyFilter();
   const pts=P.filter(matchCat); if(q&&pts.length){const b=new kakao.maps.LatLngBounds();pts.forEach(p=>b.extend(new kakao.maps.LatLng(p.lat,p.lng)));map.setBounds(b);}});
 qc.onclick=()=>{qi.value="";q="";qc.classList.remove('on');applyFilter();qi.focus();};
 
@@ -1332,7 +1381,7 @@ function finishSpin(winner){
     ${winner.memo?`<div class="rs-memo">${winner.memo}</div>`:''}
     <button class="rs-menubtn" id="rsMenuBtn">📷 메뉴·가격 보기</button>
     <div class="votewidget" id="rsVoteWidget" style="margin-top:11px">
-      <span class="vlabel">어스 추천?</span>
+      <span class="vlabel">어스 추천/비추천</span>
       <button class="votebtn up" id="rsVoteUpBtn">👍 <span class="vcount" id="rsVoteUpCount">–</span></button>
       <button class="votebtn down" id="rsVoteDownBtn">👎 <span class="vcount" id="rsVoteDownCount">–</span></button>
     </div>`;
