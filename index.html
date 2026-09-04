@@ -107,6 +107,7 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .shop-ac-item .ac-cat{font-size:.68rem;color:var(--sub);flex:0 0 auto}
 .shop-ac-item .ac-walk{font-size:.68rem;color:var(--ct);font-weight:700;margin-left:auto;flex:0 0 auto}
 .shop-picked{margin-top:-2px;padding:10px 12px;border:1.5px solid var(--us);background:var(--us-bg);border-radius:var(--r-md)}
+.when-preview{margin-top:-2px;padding:9px 12px;border:1.5px solid var(--ct);background:#EAF3FD;border-radius:var(--r-md);font-size:.83rem;font-weight:800;color:#0F4C8A}
 .shop-picked .sp-name{font-size:.85rem;font-weight:800;color:#0A6B3A}
 .shop-picked .sp-meta{font-size:.72rem;color:var(--sub-deep);margin-top:3px}
 .shop-picked .sp-clear{font-size:.7rem;color:var(--sub);text-decoration:underline;cursor:pointer;margin-top:5px;display:inline-block}
@@ -537,7 +538,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
   <div class="modal">
     <button class="modal-x" id="meetClose">✕</button>
     <h2>🔥 오늘 같이 갈 사람</h2>
-    <div class="desc">같이 갈 사람을 모아보세요. 이번 주(월~일) 약속이 보여요.</div>
+    <div class="desc">같이 갈 사람을 모아보세요. 오늘부터 한 달 안의 약속이 보여요.</div>
     <div class="myname-row">
       <span class="myname-label">👤 내 이름</span>
       <input type="text" id="meetNameInput" placeholder="예: 허교범" maxlength="20">
@@ -552,11 +553,12 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
       <div class="shop-picked" id="meetShopPicked" style="display:none"></div>
       <label>언제 만날까요? *</label>
       <input type="datetime-local" id="meetTimeInput">
+      <div class="when-preview" id="meetWhenPreview" style="display:none"></div>
       <label>어디서 모일까요?</label>
       <input type="text" id="meetPlaceInput" placeholder="예: 1층 로비" maxlength="60">
       <label>한마디</label>
       <input type="text" id="meetNoteInput" placeholder="예: 웨이팅 있을 수 있어요" maxlength="200">
-      <button id="meetSubmit">모집 올리기</button>
+      <button id="meetSubmit">✓ 이 내용으로 모집 올리기</button>
     </div>
     <div id="meetList"></div>
   </div>
@@ -753,12 +755,10 @@ function todayKST(){
   return new Date(Date.now()+9*3600*1000).toISOString().slice(0,10);
 }
 function weekRangeKST(){
-  // 이번 주 월요일~일요일 (한국시간 기준)
+  // 오늘부터 한 달 뒤까지 (한국시간 기준) - 지난 약속은 자동으로 목록에서 사라짐
   const kst=new Date(Date.now()+9*3600*1000);
-  const dow=(kst.getUTCDay()+6)%7; // 월=0 ... 일=6
-  const mon=new Date(kst); mon.setUTCDate(kst.getUTCDate()-dow);
-  const sun=new Date(mon); sun.setUTCDate(mon.getUTCDate()+6);
-  return { from: mon.toISOString().slice(0,10), to: sun.toISOString().slice(0,10) };
+  const end=new Date(kst); end.setUTCMonth(end.getUTCMonth()+1);
+  return { from: kst.toISOString().slice(0,10), to: end.toISOString().slice(0,10) };
 }
 async function fetchMeetups(){
   if(!sb) return [];
@@ -1131,6 +1131,16 @@ document.addEventListener('click',e=>{
   if(!meetShopAC.contains(e.target) && e.target!==meetShopInput) meetShopAC.classList.remove('on');
 });
 
+// 날짜·시간을 고르면 무엇을 골랐는지 크게 확인시켜 줌(달력이 닫혀도 헷갈리지 않게)
+const meetTimeInputEl=document.getElementById('meetTimeInput');
+const meetWhenPreview=document.getElementById('meetWhenPreview');
+meetTimeInputEl.addEventListener('change',()=>{
+  const v=meetTimeInputEl.value;
+  if(!v){ meetWhenPreview.style.display='none'; return; }
+  meetWhenPreview.textContent='🗓️ '+fmtMeetWhen(v.slice(0,10), v.slice(11,16))+' 로 선택됨';
+  meetWhenPreview.style.display='block';
+});
+
 document.getElementById('meetSubmit').onclick=async()=>{
   const name=document.getElementById('meetNameInput').value.trim();
   const shop=meetShopInput.value.trim();
@@ -1139,19 +1149,19 @@ document.getElementById('meetSubmit').onclick=async()=>{
   if(!shop){ meetShopInput.focus(); return; }
   if(!dt){ alert('언제 만날지 날짜와 시간을 골라주세요.'); document.getElementById('meetTimeInput').focus(); return; }
   const meetDate=dt.slice(0,10), meetTime=dt.slice(11,16);
-  // 이번 주(월~일) 범위를 벗어나면 목록에 안 보이므로 미리 안내
-  const {from,to}=weekRangeKST();
-  if(meetDate<from || meetDate>to){
-    if(!confirm(`이번 주(${from} ~ ${to}) 밖의 날짜예요.\n목록에는 해당 주에만 보여요. 그래도 올릴까요?`)) return;
+  // 지난 날짜는 목록에 안 뜨므로 그것만 안내
+  if(meetDate < todayKST()){
+    if(!confirm('지난 날짜예요. 목록에는 오늘 이후 약속만 보여요.\n그래도 올릴까요?')) return;
   }
   setMyName(name);
   const btn=document.getElementById('meetSubmit');
   btn.disabled=true; btn.textContent='올리는 중...';
   const ok=await createMeetup(shop, meetTime, document.getElementById('meetPlaceInput').value, document.getElementById('meetNoteInput').value, name, meetDate);
-  btn.disabled=false; btn.textContent='모집 올리기';
+  btn.disabled=false; btn.textContent='✓ 이 내용으로 모집 올리기';
   if(ok){
     ['meetShopInput','meetTimeInput','meetPlaceInput','meetNoteInput'].forEach(id=>document.getElementById(id).value='');
     clearPickedShop();
+    meetWhenPreview.style.display='none';
     await renderMeetList();
     await updateMeetBadge();
   } else alert('등록에 실패했어요. 다시 시도해주세요.');
