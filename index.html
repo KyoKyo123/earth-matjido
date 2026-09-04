@@ -57,6 +57,30 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .tipbtn{margin-top:8px;width:100%;border:1.5px dashed var(--sub);background:transparent;color:var(--sub-deep);
   border-radius:var(--r-md);padding:9px;font:inherit;font-size:.8rem;font-weight:700;cursor:pointer;transition:background .12s}
 .tipbtn:active{background:var(--line-soft)}
+.meetbtn{margin-top:8px;width:100%;border:1.5px solid var(--reg);background:#FFF1E8;color:var(--reg-deep);
+  border-radius:var(--r-md);padding:9px;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;transition:background .12s}
+.meetbtn:active{transform:scale(.98)}
+.meetbtn .mcount{background:var(--reg);color:#fff;border-radius:999px;padding:1px 7px;font-size:.7rem;margin-left:4px}
+.meet-card{border:1.5px solid var(--line);border-radius:var(--r-md);padding:12px 13px;margin-bottom:10px;background:var(--surface)}
+.meet-card.mine{border-color:var(--reg);background:#FFF8F3}
+.meet-top{display:flex;align-items:flex-start;gap:8px}
+.meet-shop{flex:1;font-size:.92rem;font-weight:800;color:var(--ink);line-height:1.35}
+.meet-time{flex:0 0 auto;background:var(--ink);color:#fff;border-radius:8px;padding:3px 9px;font-size:.76rem;font-weight:800}
+.meet-meta{font-size:.76rem;color:var(--sub);margin-top:5px;line-height:1.5}
+.meet-note{font-size:.8rem;color:var(--sub-deep);margin-top:6px;background:var(--line-soft);border-radius:8px;padding:7px 9px;line-height:1.45}
+.meet-people{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.meet-chip{font-size:.72rem;font-weight:700;background:var(--us-bg);color:#0A6B3A;border-radius:999px;padding:3px 9px}
+.meet-chip.host{background:var(--reg);color:#fff}
+.meet-actions{display:flex;gap:6px;margin-top:10px}
+.meet-chatbtn{flex:0 0 auto;border:1.5px solid var(--line);background:var(--surface);color:var(--sub-deep);
+  border-radius:10px;padding:9px 12px;font:inherit;font-size:.78rem;font-weight:700;cursor:pointer}
+.meet-chatbtn:active{background:var(--line-soft)}
+.meet-chat{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.meet-chat-list{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto}
+.meet-chat-list .review-item{font-size:.8rem;padding:7px 10px}
+.meet-joinbtn{flex:1;border:1.5px solid var(--us);background:var(--us-bg);color:#0A6B3A;border-radius:10px;padding:8px;font:inherit;font-size:.8rem;font-weight:800;cursor:pointer}
+.meet-joinbtn.joined{background:var(--us);color:#fff}
+.meet-delbtn{flex:0 0 auto;border:1.5px solid #E5C3BD;background:var(--surface);border-radius:10px;padding:8px 11px;font-size:.8rem;cursor:pointer}
 /* 제보함 모달 */
 .tip-form{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;padding-bottom:16px;border-bottom:1.5px dashed var(--line)}
 .tip-form input{font:inherit;font-size:.85rem;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--line);outline:none}
@@ -437,6 +461,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
   <button class="mylikesbtn" id="myLikesBtn">👍 나의 따봉 <span id="myLikesCount"></span></button>
   <button class="bestbtn" id="bestBtn">🏆 어스 BEST 순위</button>
   <button class="tipbtn" id="tipBtn">📮 여기 없는 맛집 제보하기</button>
+  <button class="meetbtn" id="meetBtn">🔥 오늘 같이 갈 사람 <span id="meetCount"></span></button>
   <footer>구글맵 평점·좌표 2026-07 / US후기=사내 노션. 지도·로드뷰=카카오. 웨이팅은 당일 앱 확인 필수.</footer>
 </header>
 <div id="body">
@@ -476,6 +501,29 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
       <button id="tipSubmit">제보하기</button>
     </div>
     <div id="tipList"></div>
+  </div>
+</div>
+
+<!-- 번개모임 -->
+<div class="modal-bg best-modal" id="meetBg">
+  <div class="modal">
+    <button class="modal-x" id="meetClose">✕</button>
+    <h2>🔥 오늘 같이 갈 사람</h2>
+    <div class="desc">오늘 점심·저녁 같이 갈 사람을 모아보세요. 오늘 올라온 모집만 보여요.</div>
+    <div class="tip-form">
+      <label>내 이름 *</label>
+      <input type="text" id="meetNameInput" placeholder="예: 허교범" maxlength="20">
+      <label>어디서 먹을까요? *</label>
+      <input type="text" id="meetShopInput" placeholder="예: 옥동식" maxlength="60">
+      <label>몇 시에? *</label>
+      <input type="text" id="meetTimeInput" placeholder="예: 12:00" maxlength="20">
+      <label>어디서 모일까요?</label>
+      <input type="text" id="meetPlaceInput" placeholder="예: 1층 로비" maxlength="60">
+      <label>한마디</label>
+      <input type="text" id="meetNoteInput" placeholder="예: 웨이팅 있을 수 있어요" maxlength="200">
+      <button id="meetSubmit">모집 올리기</button>
+    </div>
+    <div id="meetList"></div>
   </div>
 </div>
 
@@ -561,6 +609,9 @@ function getVoterId(){
   return id;
 }
 const VOTER_ID = getVoterId();
+// 번개모임용 표시 이름(브라우저에 저장해두고 다음부터 자동 사용)
+function getMyName(){ return localStorage.getItem('earthmatjido_name') || ''; }
+function setMyName(n){ localStorage.setItem('earthmatjido_name', (n||'').trim().slice(0,20)); }
 async function fetchVoteCounts(shop){
   if(!sb) return {up:0,down:0,soso:0,mine:0};
   try{
@@ -657,6 +708,63 @@ async function deleteSuggestion(id){
   try{
     // 자기가 쓴 것만 지워지도록 author 조건을 함께 걸어 요청
     const { error } = await sb.from('suggestions').delete().eq('id', id).eq('author', VOTER_ID);
+    if(error) return null;
+    return true;
+  }catch(e){ return null; }
+}
+/* ── 번개모임 ── */
+function todayKST(){
+  // 한국시간 기준 오늘 날짜 (YYYY-MM-DD)
+  return new Date(Date.now()+9*3600*1000).toISOString().slice(0,10);
+}
+async function fetchMeetups(){
+  if(!sb) return [];
+  try{
+    const { data, error } = await sb.from('meetups')
+      .select('id,shop,meet_at,place,note,host_name,host_id,meet_date,meetup_joins(user_name,user_id)')
+      .eq('meet_date', todayKST())
+      .order('meet_at',{ascending:true});
+    if(error || !data) return [];
+    return data;
+  }catch(e){ return []; }
+}
+async function createMeetup(shop, meetAt, place, note, hostName){
+  if(!sb) return null;
+  try{
+    const { error } = await sb.from('meetups').insert({
+      shop:(shop||'').trim().slice(0,60),
+      meet_at:(meetAt||'').trim(),
+      place:(place||'').trim()||null,
+      note:(note||'').trim().slice(0,200)||null,
+      host_name:(hostName||'').trim().slice(0,20),
+      host_id:VOTER_ID
+    });
+    if(error) return null;
+    return true;
+  }catch(e){ return null; }
+}
+async function joinMeetup(meetupId, name){
+  if(!sb) return null;
+  try{
+    const { error } = await sb.from('meetup_joins').insert({
+      meetup_id:meetupId, user_name:(name||'').trim().slice(0,20), user_id:VOTER_ID
+    });
+    if(error) return null;
+    return true;
+  }catch(e){ return null; }
+}
+async function leaveMeetup(meetupId){
+  if(!sb) return null;
+  try{
+    const { error } = await sb.from('meetup_joins').delete().eq('meetup_id',meetupId).eq('user_id',VOTER_ID);
+    if(error) return null;
+    return true;
+  }catch(e){ return null; }
+}
+async function deleteMeetup(id){
+  if(!sb) return null;
+  try{
+    const { error } = await sb.from('meetups').delete().eq('id',id).eq('host_id',VOTER_ID);
     if(error) return null;
     return true;
   }catch(e){ return null; }
@@ -903,6 +1011,139 @@ async function fetchVoteCountsBulk(shops){
     return empty;
   }catch(e){ return empty; }
 }
+/* ── 번개모임 UI ── */
+const meetBg=document.getElementById('meetBg'), meetList=document.getElementById('meetList');
+document.getElementById('meetBtn').onclick=async function(){
+  if(!sb){ alert('번개모임 기능을 불러오지 못했어요. 인터넷 연결을 확인해주세요.'); return; }
+  meetBg.classList.add('open');
+  document.getElementById('meetNameInput').value=getMyName();
+  ['meetShopInput','meetTimeInput','meetPlaceInput','meetNoteInput'].forEach(id=>document.getElementById(id).value='');
+  meetList.innerHTML='<div class="best-empty">불러오는 중...</div>';
+  await renderMeetList();
+};
+document.getElementById('meetClose').onclick=()=>meetBg.classList.remove('open');
+meetBg.addEventListener('click',e=>{ if(e.target===meetBg) meetBg.classList.remove('open'); });
+document.getElementById('meetSubmit').onclick=async()=>{
+  const name=document.getElementById('meetNameInput').value.trim();
+  const shop=document.getElementById('meetShopInput').value.trim();
+  const time=document.getElementById('meetTimeInput').value.trim();
+  if(!name){ document.getElementById('meetNameInput').focus(); return; }
+  if(!shop){ document.getElementById('meetShopInput').focus(); return; }
+  if(!time){ document.getElementById('meetTimeInput').focus(); return; }
+  setMyName(name);
+  const btn=document.getElementById('meetSubmit');
+  btn.disabled=true; btn.textContent='올리는 중...';
+  const ok=await createMeetup(shop, time, document.getElementById('meetPlaceInput').value, document.getElementById('meetNoteInput').value, name);
+  btn.disabled=false; btn.textContent='모집 올리기';
+  if(ok){
+    ['meetShopInput','meetTimeInput','meetPlaceInput','meetNoteInput'].forEach(id=>document.getElementById(id).value='');
+    await renderMeetList();
+    await updateMeetBadge();
+  } else alert('등록에 실패했어요. 다시 시도해주세요.');
+};
+async function renderMeetList(){
+  const meetups=await fetchMeetups();
+  if(!meetups.length){
+    meetList.innerHTML='<div class="best-empty">오늘 올라온 모집이 없어요.<br>첫 모집을 올려보세요!</div>';
+    return;
+  }
+  meetList.innerHTML='';
+  meetups.forEach(m=>{
+    const joins=m.meetup_joins||[];
+    const iJoined=joins.some(j=>j.user_id===VOTER_ID);
+    const isHost=m.host_id===VOTER_ID;
+    const card=document.createElement('div');
+    card.className='meet-card'+(isHost?' mine':'');
+    card.innerHTML=`
+      <div class="meet-top">
+        <div class="meet-shop">${escapeHtml(m.shop)}</div>
+        <div class="meet-time">${escapeHtml(m.meet_at)}</div>
+      </div>
+      <div class="meet-meta">👤 ${escapeHtml(m.host_name)} 모집${m.place?` · 📍 ${escapeHtml(m.place)}`:''}</div>
+      ${m.note?`<div class="meet-note">${escapeHtml(m.note)}</div>`:''}
+      <div class="meet-people">
+        <span class="meet-chip host">${escapeHtml(m.host_name)}</span>
+        ${joins.map(j=>`<span class="meet-chip">${escapeHtml(j.user_name)}</span>`).join('')}
+        <span class="meet-chip" style="background:var(--line-soft);color:var(--sub)">총 ${joins.length+1}명</span>
+      </div>
+      <div class="meet-actions">
+        <button class="meet-joinbtn${iJoined?' joined':''}">${iJoined?'✓ 참여 중 (취소)':'+ 나도 갈래요'}</button>
+        <button class="meet-chatbtn">💬 대화</button>
+        ${isHost?'<button class="meet-delbtn" title="내 모집 삭제">🗑️</button>':''}
+      </div>
+      <div class="meet-chat" style="display:none">
+        <div class="meet-chat-list"></div>
+        <div class="review-input-row" style="margin-top:8px;margin-bottom:0">
+          <input type="text" class="meet-chat-input" placeholder="예: 12시 5분에 로비로 갈게요" maxlength="200">
+          <button class="meet-chat-send">보내기</button>
+        </div>
+      </div>`;
+    card.querySelector('.meet-joinbtn').onclick=async(ev)=>{
+      const b=ev.currentTarget; b.disabled=true;
+      if(iJoined){ await leaveMeetup(m.id); }
+      else{
+        let nm=getMyName();
+        if(!nm){ nm=(prompt('참여할 이름을 입력해주세요')||'').trim(); if(!nm){ b.disabled=false; return; } setMyName(nm); }
+        await joinMeetup(m.id, nm);
+      }
+      await renderMeetList();
+      await updateMeetBadge();
+    };
+    const del=card.querySelector('.meet-delbtn');
+    if(del) del.onclick=async()=>{
+      if(!confirm(`"${m.shop}" 모집을 삭제할까요?`)) return;
+      del.disabled=true;
+      const ok=await deleteMeetup(m.id);
+      if(ok){ await renderMeetList(); await updateMeetBadge(); }
+      else { alert('삭제에 실패했어요.'); del.disabled=false; }
+    };
+    // ── 모집별 대화(기존 reviews 테이블을 "__meetup_<id>" 키로 재사용) ──
+    const chatKey='__meetup_'+m.id;
+    const chatBox=card.querySelector('.meet-chat');
+    const chatList=card.querySelector('.meet-chat-list');
+    const chatInput=card.querySelector('.meet-chat-input');
+    async function loadChat(){
+      chatList.innerHTML='<div class="review-empty">불러오는 중...</div>';
+      const items=await fetchReviews(chatKey);
+      if(!items.length){ chatList.innerHTML='<div class="review-empty">아직 대화가 없어요. 첫 메시지를 남겨보세요!</div>'; return; }
+      chatList.innerHTML='';
+      items.slice().reverse().forEach(it=>{
+        const el=document.createElement('div'); el.className='review-item';
+        el.innerHTML=escapeHtml(it.comment);
+        chatList.appendChild(el);
+      });
+      chatList.scrollTop=chatList.scrollHeight;
+    }
+    card.querySelector('.meet-chatbtn').onclick=async(ev)=>{
+      const open = chatBox.style.display==='none';
+      chatBox.style.display = open?'block':'none';
+      ev.currentTarget.textContent = open?'💬 접기':'💬 대화';
+      if(open) await loadChat();
+    };
+    async function sendChat(){
+      const text=chatInput.value.trim(); if(!text) return;
+      let nm=getMyName();
+      if(!nm){ nm=(prompt('이름을 입력해주세요')||'').trim(); if(!nm) return; setMyName(nm); }
+      const btn=card.querySelector('.meet-chat-send');
+      btn.disabled=true;
+      const ok=await postReview(chatKey, `${nm}: ${text}`);
+      btn.disabled=false;
+      if(ok){ chatInput.value=''; await loadChat(); }
+      else alert('전송에 실패했어요.');
+    }
+    card.querySelector('.meet-chat-send').onclick=sendChat;
+    chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat(); });
+    meetList.appendChild(card);
+  });
+}
+async function updateMeetBadge(){
+  if(!sb) return;
+  const meetups=await fetchMeetups();
+  const el=document.getElementById('meetCount');
+  el.className = meetups.length?'mcount':'';
+  el.textContent = meetups.length? meetups.length : '';
+}
+
 async function renderTipList(){
   const suggestions = await fetchSuggestions();
   if(!suggestions.length){
@@ -988,6 +1229,7 @@ function buildMap(){
   map.setMaxLevel(7);
   drawOfficeMarkers();
   buildMarkers(); buildChips(); buildOfficeTabs(); applyFilter();
+  setTimeout(()=>{ if(typeof updateMeetBadge==='function') updateMeetBadge(); }, 800); // 오늘 번개 건수 뱃지
   kakao.maps.event.addListener(map,'click',closePanel);
   window.addEventListener('resize',()=>{ if(map) setTimeout(()=>map.relayout(),50); });
 }
