@@ -1559,7 +1559,7 @@ async function migrateSuggestionNotes(doneList){
     const existing=await fetchReviews(shop.n);
     // 같은 내용이 이미 있으면 중복 등록 안 함
     if(existing.some(r=>r.comment.includes(s.note.slice(0,20)))){ migrated.push(s.id); continue; }
-    const ok=await postReview(shop.n, s.note, '제보');
+    const ok=await postReview(shop.n, s.note, ''); // 익명으로 남김
     if(ok) migrated.push(s.id);
   }
   localStorage.setItem('earthmatjido_migrated', JSON.stringify(migrated.slice(-200)));
@@ -1571,7 +1571,7 @@ async function renderTipList(){
   const done = all.filter(s=>isAlreadyOnMap(s.shop));
   const doneCount = done.length;
   if(doneCount) migrateSuggestionNotes(done); // 한마디를 가게 한줄평으로 옮김(백그라운드)
-  const doneMsg = doneCount ? `<div class="tip-done-note">✅ 지도에 반영된 제보 ${doneCount}건은 정리됐어요 (남긴 한마디는 그 가게 한줄평으로 옮겨져요)</div>` : '';
+  const doneMsg = '';
   if(!suggestions.length){
     tipList.innerHTML = doneMsg + '<div class="best-empty">아직 반영 대기 중인 제보가 없어요.<br>새 맛집을 알려주세요!</div>';
     return;
