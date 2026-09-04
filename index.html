@@ -174,6 +174,13 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .review-item .rdel{margin-left:auto;border:none;background:none;cursor:pointer;font-size:.78rem;padding:2px 4px;opacity:.6}
 .review-item .rdel:active{opacity:1}
 .review-item .rbody{word-break:break-word}
+.review-item .ractions{display:flex;align-items:center;gap:8px;margin-top:6px}
+.review-item .rlike,.review-item .rreply{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;
+  padding:3px 9px;font:inherit;font-size:.68rem;font-weight:700;color:var(--sub-deep);cursor:pointer}
+.review-item .rlike.on{background:var(--us);border-color:var(--us);color:#fff}
+.review-item .ractions .rtime{margin-left:auto}
+.review-reply{margin-left:22px;border-left:3px solid var(--line);background:var(--surface)}
+.reply-form{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
 .review-mode-row{display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
 .rmode{display:flex;align-items:center;gap:4px;font-size:.78rem;font-weight:700;color:var(--sub-deep);cursor:pointer}
 .rmode input{margin:0;cursor:pointer}
@@ -561,13 +568,13 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
     <div class="desc">같이 갈 사람을 모아보세요. 오늘부터 한 달 안의 약속이 보여요.</div>
     <div class="myname-row">
       <span class="myname-label">👤 내 이름</span>
-      <input type="text" id="meetNameInput" placeholder="예: 허교범" maxlength="20">
+      <input type="text" id="meetNameInput" placeholder="이름 입력" maxlength="20">
       <span class="myname-hint" id="meetNameHint"></span>
     </div>
     <div class="tip-form">
       <label>어디서 먹을까요? *</label>
       <div class="shop-ac-wrap">
-        <input type="text" id="meetShopInput" placeholder="가게 이름 입력 (지도에 있으면 자동완성)" maxlength="60" autocomplete="off">
+        <input type="text" id="meetShopInput" placeholder="가게 이름" maxlength="60" autocomplete="off">
         <div class="shop-ac-list" id="meetShopAC"></div>
       </div>
       <div class="shop-picked" id="meetShopPicked" style="display:none"></div>
@@ -580,7 +587,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
       <input type="datetime-local" id="meetTimeInput" class="datepick-hidden">
       <div class="when-preview" id="meetWhenPreview" style="display:none"></div>
       <label>어디서 모일까요?</label>
-      <input type="text" id="meetPlaceInput" placeholder="예: 1층 로비" maxlength="60">
+      <input type="text" id="meetPlaceInput" placeholder="예: 스퀘어 1층" maxlength="60">
       <label>한마디</label>
       <input type="text" id="meetNoteInput" placeholder="예: 웨이팅 있을 수 있어요" maxlength="200">
       <button id="meetSubmit">✓ 이 내용으로 모집 올리기</button>
@@ -595,6 +602,11 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
     <button class="modal-x" id="reviewClose">✕</button>
     <h2 id="reviewShopName">한줄평</h2>
     <div class="desc">이 가게에 대한 한줄평을 남겨보세요 (200자 이내)</div>
+    <div class="review-mode-row">
+      <label class="rmode"><input type="radio" name="modalRMode" value="anon" checked> 익명으로</label>
+      <label class="rmode"><input type="radio" name="modalRMode" value="named"> 이름으로</label>
+      <input type="text" id="reviewName" class="rname-input" placeholder="이름" maxlength="20" style="display:none">
+    </div>
     <div class="review-input-row">
       <input type="text" id="reviewInput" placeholder="예: 점심 특선이 가성비 좋아요" maxlength="200">
       <button id="reviewSubmit">등록</button>
@@ -727,12 +739,12 @@ async function fetchTopShops(limit){
 async function fetchReviews(shop){
   if(!sb) return [];
   try{
-    const { data, error } = await sb.from('reviews').select('id,comment,author,nickname,created_at').eq('shop', shop).order('created_at',{ascending:false}).limit(30);
+    const { data, error } = await sb.from('reviews').select('id,comment,author,nickname,parent_id,created_at').eq('shop', shop).order('created_at',{ascending:false}).limit(100);
     if(error || !data) return [];
     return data;
   }catch(e){ return []; }
 }
-async function postReview(shop, comment, nickname){
+async function postReview(shop, comment, nickname, parentId){
   if(!sb) return null;
   const trimmed = (comment||'').trim().slice(0,200);
   if(!trimmed) return null;
@@ -740,8 +752,37 @@ async function postReview(shop, comment, nickname){
     const row={ shop, comment: trimmed, author: VOTER_ID };
     const nm=(nickname||'').trim().slice(0,20);
     if(nm) row.nickname=nm; // 비어있으면 익명
+    if(parentId) row.parent_id=parentId; // 대댓글이면 부모 지정
     const { error } = await sb.from('reviews').insert(row);
     if(error) return null;
+    return true;
+  }catch(e){ return null; }
+}
+async function fetchReviewLikes(reviewIds){
+  // 여러 한줄평의 좋아요를 한 번에 집계
+  const out={};
+  (reviewIds||[]).forEach(id=>out[id]={count:0,mine:false});
+  if(!sb || !reviewIds || !reviewIds.length) return out;
+  try{
+    const { data, error } = await sb.from('review_likes').select('review_id,user_id').in('review_id', reviewIds);
+    if(error || !data) return out;
+    data.forEach(r=>{
+      const c=out[r.review_id]; if(!c) return;
+      c.count++; if(r.user_id===VOTER_ID) c.mine=true;
+    });
+    return out;
+  }catch(e){ return out; }
+}
+async function toggleReviewLike(reviewId, liked){
+  if(!sb) return null;
+  try{
+    if(liked){
+      const { error } = await sb.from('review_likes').delete().eq('review_id',reviewId).eq('user_id',VOTER_ID);
+      if(error) return null;
+    }else{
+      const { error } = await sb.from('review_likes').insert({ review_id:reviewId, user_id:VOTER_ID });
+      if(error) return null;
+    }
     return true;
   }catch(e){ return null; }
 }
@@ -1054,17 +1095,95 @@ function openReviewPanel(shopName){
   reviewBg.classList.add('open');
   loadReviews();
 }
-async function loadReviews(){
-  const items=await fetchReviews(currentReviewShop);
-  if(!items.length){ reviewList.innerHTML='<div class="review-empty">아직 한줄평이 없어요. 첫 후기를 남겨보세요!</div>'; return; }
-  reviewList.innerHTML='';
-  items.forEach(it=>{
-    const el=document.createElement('div'); el.className='review-item';
+/* 한줄평 목록 공통 렌더러 - 대댓글·좋아요·삭제 지원 (가게카드/BEST모달 공용) */
+async function renderReviewTree(listEl, shopName, onRefresh){
+  const items=await fetchReviews(shopName);
+  if(!items.length){ listEl.innerHTML='<div class="review-empty">아직 한줄평이 없어요. 첫 후기를 남겨보세요!</div>'; return; }
+  const likes=await fetchReviewLikes(items.map(i=>i.id));
+  const roots=items.filter(i=>!i.parent_id);
+  const kids={};
+  items.filter(i=>i.parent_id).forEach(i=>{ (kids[i.parent_id]=kids[i.parent_id]||[]).push(i); });
+  Object.values(kids).forEach(arr=>arr.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)));
+  listEl.innerHTML='';
+  const refresh = onRefresh || (()=>renderReviewTree(listEl, shopName, onRefresh));
+
+  function buildItem(it, isReply){
+    const el=document.createElement('div');
+    el.className='review-item'+(isReply?' review-reply':'');
     const d=new Date(it.created_at);
-    const timeStr=`${d.getMonth()+1}/${d.getDate()}`;
-    el.innerHTML=`${escapeHtml(it.comment)}<div class="rtime">${timeStr}</div>`;
-    reviewList.appendChild(el);
+    const who = it.nickname ? `<b>${escapeHtml(it.nickname)}</b>` : '<span class="ranon">익명</span>';
+    const mine = it.author===VOTER_ID;
+    const lk = likes[it.id] || {count:0,mine:false};
+    el.innerHTML=`<div class="rhead">${who}${mine?'<button class="rdel" title="삭제">🗑️</button>':''}</div>
+      <div class="rbody">${escapeHtml(it.comment)}</div>
+      <div class="ractions">
+        <button class="rlike${lk.mine?' on':''}">👍 <span>${lk.count}</span></button>
+        ${isReply?'':'<button class="rreply">💬 답글</button>'}
+        <span class="rtime">${d.getMonth()+1}/${d.getDate()}</span>
+      </div>`;
+    if(mine) el.querySelector('.rdel').onclick=async()=>{
+      if(!confirm('삭제할까요? 달린 답글도 함께 사라져요.')) return;
+      const ok=await deleteReview(it.id);
+      if(ok) refresh(); else alert('삭제에 실패했어요.');
+    };
+    const likeBtn=el.querySelector('.rlike');
+    likeBtn.onclick=async()=>{
+      likeBtn.disabled=true;
+      const wasLiked=likeBtn.classList.contains('on');
+      const ok=await toggleReviewLike(it.id, wasLiked);
+      if(ok){
+        likeBtn.classList.toggle('on', !wasLiked);
+        const sp=likeBtn.querySelector('span');
+        sp.textContent=Math.max(0,(parseInt(sp.textContent)||0)+(wasLiked?-1:1));
+      }
+      likeBtn.disabled=false;
+    };
+    const replyBtn=el.querySelector('.rreply');
+    if(replyBtn) replyBtn.onclick=()=>{
+      if(el.querySelector('.reply-form')) return;
+      const f=document.createElement('div'); f.className='reply-form';
+      f.innerHTML=`<div class="review-mode-row">
+          <label class="rmode"><input type="radio" name="rm${it.id}" value="anon" checked> 익명</label>
+          <label class="rmode"><input type="radio" name="rm${it.id}" value="named"> 이름</label>
+          <input type="text" class="rf-name rname-input" placeholder="이름" maxlength="20" style="display:none">
+        </div>
+        <div class="review-input-row" style="margin-bottom:0">
+          <input type="text" class="rf-text" placeholder="답글 입력" maxlength="200">
+          <button class="rf-send">등록</button>
+        </div>`;
+      el.appendChild(f);
+      f.querySelectorAll(`input[name="rm${it.id}"]`).forEach(r=>{
+        r.onchange=()=>{
+          const named=f.querySelector(`input[name="rm${it.id}"]:checked`).value==='named';
+          const ni=f.querySelector('.rf-name');
+          ni.style.display=named?'block':'none';
+          if(named && !ni.value) ni.value=getMyName();
+        };
+      });
+      const send=async()=>{
+        const txt=f.querySelector('.rf-text').value.trim(); if(!txt) return;
+        const named=f.querySelector(`input[name="rm${it.id}"]:checked`).value==='named';
+        let nick='';
+        if(named){ nick=f.querySelector('.rf-name').value.trim(); if(!nick){ alert('이름을 입력하거나 익명을 선택해주세요.'); return; } setMyName(nick); }
+        const b=f.querySelector('.rf-send'); b.disabled=true;
+        const ok=await postReview(shopName, txt, nick, it.id);
+        b.disabled=false;
+        if(ok) refresh(); else alert('등록에 실패했어요.');
+      };
+      f.querySelector('.rf-send').onclick=send;
+      f.querySelector('.rf-text').addEventListener('keydown',e=>{ if(e.key==='Enter') send(); });
+      f.querySelector('.rf-text').focus();
+    };
+    return el;
+  }
+
+  roots.forEach(it=>{
+    listEl.appendChild(buildItem(it,false));
+    (kids[it.id]||[]).forEach(k=>listEl.appendChild(buildItem(k,true)));
   });
+}
+async function loadReviews(){
+  await renderReviewTree(reviewList, currentReviewShop, loadReviews);
 }
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
@@ -1514,14 +1633,30 @@ async function renderTipList(){
 }
 document.getElementById('reviewClose').onclick=()=>reviewBg.classList.remove('open');
 reviewBg.addEventListener('click',e=>{ if(e.target===reviewBg) reviewBg.classList.remove('open'); });
+// BEST 모달: 익명/이름 전환
+document.querySelectorAll('input[name="modalRMode"]').forEach(r=>{
+  r.onchange=()=>{
+    const named=document.querySelector('input[name="modalRMode"]:checked').value==='named';
+    const ni=document.getElementById('reviewName');
+    ni.style.display=named?'block':'none';
+    if(named && !ni.value) ni.value=getMyName();
+  };
+});
 document.getElementById('reviewSubmit').onclick=async()=>{
   if(!sb) return;
   const input=document.getElementById('reviewInput');
   const text=input.value.trim();
   if(!text) return;
+  const named=document.querySelector('input[name="modalRMode"]:checked').value==='named';
+  let nick='';
+  if(named){
+    nick=document.getElementById('reviewName').value.trim();
+    if(!nick){ alert('이름을 입력하거나 익명을 선택해주세요.'); document.getElementById('reviewName').focus(); return; }
+    setMyName(nick);
+  }
   const btn=document.getElementById('reviewSubmit');
   btn.disabled=true;
-  const ok=await postReview(currentReviewShop, text);
+  const ok=await postReview(currentReviewShop, text, nick);
   btn.disabled=false;
   if(ok){ input.value=''; loadReviews(); }
   else alert('등록에 실패했어요. 다시 시도해주세요.');
@@ -1902,27 +2037,7 @@ function openPanel(p){
     };
   });
   async function renderCardReviews(){
-    const items=await fetchReviews(p.n);
-    if(!items.length){ cardReviewList.innerHTML='<div class="review-empty">아직 한줄평이 없어요. 첫 후기를 남겨보세요!</div>'; return; }
-    cardReviewList.innerHTML='';
-    items.forEach(it=>{
-      const el=document.createElement('div'); el.className='review-item';
-      const d=new Date(it.created_at);
-      const who = it.nickname ? `<b>${escapeHtml(it.nickname)}</b>` : '<span class="ranon">익명</span>';
-      const mine = it.author===VOTER_ID;
-      el.innerHTML=`<div class="rhead">${who}${mine?'<button class="rdel" title="내 한줄평 삭제">🗑️</button>':''}</div>
-        <div class="rbody">${escapeHtml(it.comment)}</div>
-        <div class="rtime">${d.getMonth()+1}/${d.getDate()}</div>`;
-      if(mine){
-        el.querySelector('.rdel').onclick=async()=>{
-          if(!confirm('이 한줄평을 삭제할까요?')) return;
-          const ok=await deleteReview(it.id);
-          if(ok) await renderCardReviews();
-          else alert('삭제에 실패했어요.');
-        };
-      }
-      cardReviewList.appendChild(el);
-    });
+    await renderReviewTree(cardReviewList, p.n, renderCardReviews);
   }
   cardReviewList.innerHTML='<div class="review-empty">불러오는 중...</div>';
   renderCardReviews();
