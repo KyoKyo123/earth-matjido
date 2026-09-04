@@ -769,7 +769,17 @@ async function fetchMeetups(){
       .gte('meet_date', from).lte('meet_date', to)
       .order('meet_date',{ascending:true}).order('meet_at',{ascending:true});
     if(error || !data) return [];
-    return data;
+    // 약속 시간이 1시간 넘게 지난 건 목록에서 제외(끝난 약속이 계속 남지 않게)
+    const nowKST = new Date(Date.now()+9*3600*1000);
+    return data.filter(m=>{
+      if(!m.meet_date || !m.meet_at) return true;
+      const hm = String(m.meet_at).match(/(\d{1,2}):(\d{2})/);
+      if(!hm) return true;
+      const end = new Date(m.meet_date+'T00:00:00Z');
+      end.setUTCHours(parseInt(hm[1]), parseInt(hm[2]), 0, 0);
+      end.setUTCHours(end.getUTCHours()+1); // 약속시간 +1시간까지 노출
+      return nowKST <= end;
+    });
   }catch(e){ return []; }
 }
 async function createMeetup(shop, meetAt, place, note, hostName, meetDate){
