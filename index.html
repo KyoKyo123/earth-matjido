@@ -404,7 +404,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
 <body>
 <div id="app">
 <header>
-  <div class="titlerow"><h1>어스 <em>맛집</em> 대동여지도</h1><span class="sub"><b style="color:var(--us)">초록=US인증</b> · <b style="color:var(--ct)">파랑테=예약가능</b></span></div>
+  <div class="titlerow"><h1>어스 <em>맛집</em> 대동여지도</h1><span class="sub"><b style="color:var(--us)">초록 = 어스 인증 (Notion)</b></span></div>
   <div class="officetabs" id="officeTabs"></div>
   <div class="roulette-banner">
     <div class="rb-title">🎲 뭐 먹을지 모르겠음 룰렛!</div>
@@ -508,7 +508,7 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
     <div class="roulette-sec" id="catStepSec">
       <div class="label">도보 거리</div>
       <div class="roulette-opts" id="rDistOpts"></div>
-      <button class="usjumpbtn" id="usJumpBtn" style="margin-top:12px">🟢 US인증 맛집에서만 바로 돌리기</button>
+      <button class="usjumpbtn" id="usJumpBtn" style="margin-top:12px">🟢 어스인증 맛집에서만 바로 돌리기</button>
       <div class="label" style="margin-top:12px">카테고리별 인원 (합계 <span id="totalCount">0</span>명)</div>
       <div class="catcount-list" id="catCountList"></div>
       <div class="label" style="margin-top:12px">가격대별 인원 (섞어서 같이 돌리기 가능)</div>
@@ -887,15 +887,33 @@ document.getElementById('tipSubmit').onclick=async()=>{
     await renderTipList();
   } else alert('등록에 실패했어요. 다시 시도해주세요.');
 };
+async function fetchVoteCountsBulk(shops){
+  // 여러 가게의 투표를 한 번의 요청으로 가져와서 합산 (제보 목록이 길어져도 느려지지 않게)
+  const empty={};
+  shops.forEach(s=>empty[s]={up:0,down:0,soso:0,mine:0});
+  if(!sb || !shops.length) return empty;
+  try{
+    const { data, error } = await sb.from('votes').select('shop,vote,voter').in('shop', shops);
+    if(error || !data) return empty;
+    data.forEach(r=>{
+      const c=empty[r.shop]; if(!c) return;
+      if(r.vote===1) c.up++; else if(r.vote===-1) c.down++; else if(r.vote===2) c.soso++;
+      if(r.voter===VOTER_ID) c.mine=r.vote;
+    });
+    return empty;
+  }catch(e){ return empty; }
+}
 async function renderTipList(){
-  const [suggestions] = await Promise.all([fetchSuggestions()]);
+  const suggestions = await fetchSuggestions();
   if(!suggestions.length){
     tipList.innerHTML='<div class="best-empty">아직 제보가 없어요.<br>첫 맛집을 알려주세요!</div>';
     return;
   }
+  // 투표수를 한 번에 모아서 가져옴(제보마다 따로 요청하면 목록이 길어질수록 급격히 느려짐)
+  const countsMap = await fetchVoteCountsBulk(suggestions.map(s=>s.shop));
   tipList.innerHTML='';
   for(const s of suggestions){
-    const counts = await fetchVoteCounts(s.shop);
+    const counts = countsMap[s.shop] || {up:0,down:0,soso:0,mine:0};
     const isMine = s.author === VOTER_ID;
     const row=document.createElement('div'); row.className='tip-row';
     row.innerHTML=`
@@ -906,9 +924,9 @@ async function renderTipList(){
         <div class="tip-review-hint">💬 한줄평 보기 ›</div>
       </div>
       <div class="tip-quickvote">
-        <button class="qvbtn up" data-v="1" title="추천">👍</button>
-        <button class="qvbtn soso" data-v="2" title="소소">😐</button>
-        <button class="qvbtn down" data-v="-1" title="비추">👎</button>
+        <button class="qvbtn up${counts.mine===1?' on':''}" data-v="1" title="추천">👍</button>
+        <button class="qvbtn soso${counts.mine===2?' on':''}" data-v="2" title="소소">😐</button>
+        <button class="qvbtn down${counts.mine===-1?' on':''}" data-v="-1" title="비추">👎</button>
         ${isMine?'<button class="qvbtn del" title="내 제보 삭제">🗑️</button>':''}
       </div>`;
     row.querySelector('.tip-info').onclick=()=>{
@@ -918,9 +936,20 @@ async function renderTipList(){
     row.querySelectorAll('.qvbtn[data-v]').forEach(qb=>{
       qb.onclick=async(ev)=>{
         ev.stopPropagation();
-        qb.disabled=true;
-        await castVote(s.shop, parseInt(qb.dataset.v));
-        await renderTipList();
+        const btns=row.querySelectorAll('.qvbtn[data-v]');
+        btns.forEach(b=>b.disabled=true);
+        const v=parseInt(qb.dataset.v);
+        // 같은 버튼 다시 누르면 취소(0)
+        const already = qb.classList.contains('on');
+        await castVote(s.shop, already?0:v);
+        // 전체 목록을 다시 그리지 않고 이 행의 점수만 갱신(스크롤 튐·지연 방지)
+        const fresh = await fetchVoteCounts(s.shop);
+        row.querySelector('.tip-score').textContent=`👍${fresh.up} · 😐${fresh.soso} · 👎${fresh.down}`;
+        btns.forEach(b=>{
+          const bv=parseInt(b.dataset.v);
+          b.classList.toggle('on', fresh.mine===bv);
+          b.disabled=false;
+        });
       };
     });
     const delBtn=row.querySelector('.qvbtn.del');
@@ -963,7 +992,7 @@ function buildMap(){
   window.addEventListener('resize',()=>{ if(map) setTimeout(()=>map.relayout(),50); });
 }
 
-const CATS=["전체","US인증","한식","일식","중식","양식","아시안","인도·커리","고기","치킨·술집","샐러드·가볍게","카페·베이커리"];
+const CATS=["전체","어스인증","한식","일식","중식","양식","아시안","인도·커리","고기","치킨·술집","샐러드·가볍게","카페·베이커리"];
 let active="전체",q="",curLines=[],curOpen=null,timeFilter=0,priceFilter=0; // timeFilter: 0=끔,5,10(분) / priceFilter: 0=전체,1=싸다,2=평균,3=비쌈
 P.forEach(p=>{
   const rt=TMAP_ROUTES[p.n];
@@ -982,11 +1011,11 @@ function clearMyLikesFilter(){
 }
 function matchCat(p){
   if(myLikesFilter) return myLikedShops.has(p.n); // 나의 따봉 모드: 다른 조건 다 무시하고 이것만
-  const c=active==="전체"?true:active==="US인증"?!!p.us:p.cat===active;
+  const c=active==="전체"?true:active==="어스인증"?!!p.us:p.cat===active;
   if(!c)return false;
   if(priceFilter && !(p.tier||[]).includes(priceFilter)) return false;
   if(!q)return true;
-  const hay=[p.n,p.cat,p.memo||"",p.usr||"",p.us?"US인증 어스":"",p.ct===1?"캐치테이블 예약 웨이팅":"",p.wait>=2?"웨이팅":""].join(" ").toLowerCase();
+  const hay=[p.n,p.cat,p.memo||"",p.usr||"",p.us?"어스인증 US 노션":"",p.ct===1?"캐치테이블 예약 웨이팅":"",p.wait>=2?"웨이팅":""].join(" ").toLowerCase();
   return q.split(/\s+/).filter(Boolean).every(t=>hay.includes(t));
 }
 function applyFilter(){
@@ -1062,8 +1091,8 @@ function setupChipFade(chipsEl){
 function buildChips(){
   const wrap=document.getElementById('chips');
   CATS.forEach(c=>{const b=document.createElement('button');
-    b.className='chip'+(c==='US인증'?' us':'')+(c==='전체'?' on':'');
-    b.textContent=c==='US인증'?'🟢 US인증':c;
+    b.className='chip'+(c==='어스인증'?' us':'')+(c==='전체'?' on':'');
+    b.textContent=c==='어스인증'?'🟢 어스인증':c;
     b.onclick=()=>{clearMyLikesFilter();active=c;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
     wrap.appendChild(b);});
   setupChipFade(wrap);
@@ -1253,10 +1282,10 @@ function openPanel(p){
     <div class="grab"></div>
     <div class="s-head">
       ${isDesktop()?'':`<span class="s-name">${p.n}</span>`}
-      ${p.us?'<span class="tag t-us">US인증</span>':''}<span class="tag t-cat">${p.cat}</span>
+      ${p.us?'<span class="tag t-us">어스인증</span>':''}<span class="tag t-cat">${p.cat}</span>
       ${(p.tier||[]).map(t=>`<span class="tag t-price${t}">${t===1?'💚 싸다':t===2?'🍚 평균':'💸 비쌈'}</span>`).join('')}
       </div>
-    <div class="s-stats">${p.us?'<b style="color:var(--us)">🟢 어스 동료 인증</b>':'<span style="color:var(--sub)">별점·리뷰는 아래 카카오맵에서 확인</span>'}${p.approx?' · <small>좌표 근사</small>':''}</div>
+    <div class="s-stats">${p.us?'<b style="color:var(--us)">🟢 어스 인증 (Notion)</b>':'<span style="color:var(--sub)">별점·리뷰는 아래 카카오맵에서 확인</span>'}${p.approx?' · <small>좌표 근사</small>':''}</div>
     ${memoText?`<div class="core-memo">${memoText}</div>`:''}
     <button class="menubtn" id="menuBtn">📷 사진·메뉴·가격 보기</button>
     <div class="votewidget" id="voteWidget" data-shop="${p.n.replace(/"/g,'&quot;')}">
@@ -1278,7 +1307,7 @@ function openPanel(p){
       ${p.wait===3?'<span class="tag t-w2">웨이팅 헬·원격필수</span>':p.wait===2?'<span class="tag t-w2">웨이팅 필수</span>':p.wait===1?'<span class="tag t-w1">붐빔 주의</span>':''}
       <div class="ctline">${p.ct===1?'📱 캐치테이블 <b>입점 확인됨</b> — 원격 웨이팅 가능':p.ct===-1?'📱 캐치테이블 <b style="color:#C43A2E">미입점</b> — 현장만':'📱 캐치테이블 <b>미확인</b> — 버튼으로 검색'}</div>
       ${p.wait?`<div class="planbox">⏰ <b>12시 식사 플랜</b> — ${lunchPlan(p)}</div>`:''}
-      ${p.us&&p.usr!==memoText?`<div class="usbox"><div class="who">🟢 US 동료 후기 (사내 대동여지도)</div><p>${p.usr}</p></div>`:''}
+      ${p.us&&p.usr!==memoText?`<div class="usbox"><div class="who">🟢 어스 동료 후기 (Notion)</div><p>${p.usr}</p></div>`:''}
       <div class="s-links" id="slinksExtra"></div>
     </div>
     <div class="review-section">
@@ -1873,7 +1902,7 @@ function jumpToCategory(catName){
 }
 function jumpToUS(){
   // US인증 가게만 모아서 즉시 룰렛
-  jumpToPool('US인증', P.filter(p=>p.us));
+  jumpToPool('어스인증', P.filter(p=>p.us));
 }
 function jumpToPool(label, pool){
   pendingCatWinner = {n:label, __isCat:true};
