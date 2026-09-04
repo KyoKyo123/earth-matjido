@@ -81,7 +81,35 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .meet-joinbtn{flex:1;border:1.5px solid var(--us);background:var(--us-bg);color:#0A6B3A;border-radius:10px;padding:8px;font:inherit;font-size:.8rem;font-weight:800;cursor:pointer}
 .meet-joinbtn.joined{background:var(--us);color:#fff}
 .meet-delbtn{flex:0 0 auto;border:1.5px solid #E5C3BD;background:var(--surface);border-radius:10px;padding:8px 11px;font-size:.8rem;cursor:pointer}
+.meet-editbtn{flex:0 0 auto;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 11px;font-size:.8rem;cursor:pointer}
+.meet-editbtn:active{background:var(--line-soft)}
+.meet-editform{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:6px}
+.meet-editform label{font-size:.7rem;font-weight:700;color:var(--sub);margin-bottom:-3px}
+.meet-editform input{font:inherit;font-size:.83rem;padding:8px 10px;border-radius:9px;border:1.5px solid var(--line);outline:none}
+.meet-editform input:focus{border-color:var(--reg)}
+.ef-actions{display:flex;gap:6px;margin-top:4px}
+.ef-save{flex:1;border:none;background:var(--ink);color:#fff;font:inherit;font-weight:800;font-size:.82rem;padding:9px;border-radius:10px;cursor:pointer}
+.ef-cancel{flex:0 0 auto;border:1.5px solid var(--line);background:var(--surface);color:var(--sub-deep);font:inherit;font-weight:700;font-size:.82rem;padding:9px 14px;border-radius:10px;cursor:pointer}
 /* 제보함 모달 */
+.myname-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:10px 12px;background:var(--line-soft);border-radius:var(--r-md)}
+.myname-label{font-size:.78rem;font-weight:800;color:var(--sub-deep);flex:0 0 auto}
+.myname-row input{flex:1;min-width:0;font:inherit;font-size:.85rem;padding:8px 11px;border-radius:10px;border:1.5px solid var(--line);outline:none;background:var(--surface)}
+.myname-row input:focus{border-color:var(--reg)}
+.myname-hint{font-size:.68rem;color:var(--us);font-weight:700;flex:0 0 auto}
+.shop-ac-wrap{position:relative}
+.shop-ac-list{position:absolute;left:0;right:0;top:100%;z-index:30;background:var(--surface);
+  border:1.5px solid var(--line);border-radius:var(--r-md);box-shadow:0 6px 18px rgba(0,0,0,.14);
+  max-height:210px;overflow-y:auto;display:none;margin-top:3px}
+.shop-ac-list.on{display:block}
+.shop-ac-item{padding:9px 12px;font-size:.83rem;cursor:pointer;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:7px}
+.shop-ac-item:last-child{border-bottom:none}
+.shop-ac-item:active,.shop-ac-item.sel{background:var(--line-soft)}
+.shop-ac-item .ac-cat{font-size:.68rem;color:var(--sub);flex:0 0 auto}
+.shop-ac-item .ac-walk{font-size:.68rem;color:var(--ct);font-weight:700;margin-left:auto;flex:0 0 auto}
+.shop-picked{margin-top:-2px;padding:10px 12px;border:1.5px solid var(--us);background:var(--us-bg);border-radius:var(--r-md)}
+.shop-picked .sp-name{font-size:.85rem;font-weight:800;color:#0A6B3A}
+.shop-picked .sp-meta{font-size:.72rem;color:var(--sub-deep);margin-top:3px}
+.shop-picked .sp-clear{font-size:.7rem;color:var(--sub);text-decoration:underline;cursor:pointer;margin-top:5px;display:inline-block}
 .tip-form{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;padding-bottom:16px;border-bottom:1.5px dashed var(--line)}
 .tip-form input{font:inherit;font-size:.85rem;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--line);outline:none}
 .tip-form input:focus{border-color:var(--reg)}
@@ -509,14 +537,21 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
   <div class="modal">
     <button class="modal-x" id="meetClose">✕</button>
     <h2>🔥 오늘 같이 갈 사람</h2>
-    <div class="desc">오늘 점심·저녁 같이 갈 사람을 모아보세요. 오늘 올라온 모집만 보여요.</div>
-    <div class="tip-form">
-      <label>내 이름 *</label>
+    <div class="desc">같이 갈 사람을 모아보세요. 이번 주(월~일) 약속이 보여요.</div>
+    <div class="myname-row">
+      <span class="myname-label">👤 내 이름</span>
       <input type="text" id="meetNameInput" placeholder="예: 허교범" maxlength="20">
+      <span class="myname-hint" id="meetNameHint"></span>
+    </div>
+    <div class="tip-form">
       <label>어디서 먹을까요? *</label>
-      <input type="text" id="meetShopInput" placeholder="예: 옥동식" maxlength="60">
-      <label>몇 시에? *</label>
-      <input type="text" id="meetTimeInput" placeholder="예: 12:00" maxlength="20">
+      <div class="shop-ac-wrap">
+        <input type="text" id="meetShopInput" placeholder="가게 이름 입력 (지도에 있으면 자동완성)" maxlength="60" autocomplete="off">
+        <div class="shop-ac-list" id="meetShopAC"></div>
+      </div>
+      <div class="shop-picked" id="meetShopPicked" style="display:none"></div>
+      <label>언제 만날까요? *</label>
+      <input type="datetime-local" id="meetTimeInput">
       <label>어디서 모일까요?</label>
       <input type="text" id="meetPlaceInput" placeholder="예: 1층 로비" maxlength="60">
       <label>한마디</label>
@@ -717,18 +752,27 @@ function todayKST(){
   // 한국시간 기준 오늘 날짜 (YYYY-MM-DD)
   return new Date(Date.now()+9*3600*1000).toISOString().slice(0,10);
 }
+function weekRangeKST(){
+  // 이번 주 월요일~일요일 (한국시간 기준)
+  const kst=new Date(Date.now()+9*3600*1000);
+  const dow=(kst.getUTCDay()+6)%7; // 월=0 ... 일=6
+  const mon=new Date(kst); mon.setUTCDate(kst.getUTCDate()-dow);
+  const sun=new Date(mon); sun.setUTCDate(mon.getUTCDate()+6);
+  return { from: mon.toISOString().slice(0,10), to: sun.toISOString().slice(0,10) };
+}
 async function fetchMeetups(){
   if(!sb) return [];
   try{
+    const {from,to}=weekRangeKST();
     const { data, error } = await sb.from('meetups')
       .select('id,shop,meet_at,place,note,host_name,host_id,meet_date,meetup_joins(user_name,user_id)')
-      .eq('meet_date', todayKST())
-      .order('meet_at',{ascending:true});
+      .gte('meet_date', from).lte('meet_date', to)
+      .order('meet_date',{ascending:true}).order('meet_at',{ascending:true});
     if(error || !data) return [];
     return data;
   }catch(e){ return []; }
 }
-async function createMeetup(shop, meetAt, place, note, hostName){
+async function createMeetup(shop, meetAt, place, note, hostName, meetDate){
   if(!sb) return null;
   try{
     const { error } = await sb.from('meetups').insert({
@@ -737,7 +781,8 @@ async function createMeetup(shop, meetAt, place, note, hostName){
       place:(place||'').trim()||null,
       note:(note||'').trim().slice(0,200)||null,
       host_name:(hostName||'').trim().slice(0,20),
-      host_id:VOTER_ID
+      host_id:VOTER_ID,
+      meet_date: meetDate || todayKST()
     });
     if(error) return null;
     return true;
@@ -766,6 +811,16 @@ async function deleteMeetup(id){
   try{
     const { error } = await sb.from('meetups').delete().eq('id',id).eq('host_id',VOTER_ID);
     if(error) return null;
+    return true;
+  }catch(e){ return null; }
+}
+async function updateMeetup(id, fields){
+  if(!sb) return null;
+  try{
+    // 주최자 본인 글만 수정되도록 host_id 조건을 함께 검
+    const { data, error } = await sb.from('meetups').update(fields).eq('id',id).eq('host_id',VOTER_ID).select();
+    if(error) return null;
+    if(!data || !data.length) return null; // 정책상 아무것도 안 바뀐 경우
     return true;
   }catch(e){ return null; }
 }
@@ -1013,35 +1068,109 @@ async function fetchVoteCountsBulk(shops){
 }
 /* ── 번개모임 UI ── */
 const meetBg=document.getElementById('meetBg'), meetList=document.getElementById('meetList');
+const meetNameInput=document.getElementById('meetNameInput'), meetNameHint=document.getElementById('meetNameHint');
+// 이름은 입력하는 즉시 저장(한 번 잘못 넣어도 언제든 고칠 수 있게)
+meetNameInput.addEventListener('input',()=>{
+  const v=meetNameInput.value.trim();
+  if(v){ setMyName(v); meetNameHint.textContent='저장됨'; }
+  else meetNameHint.textContent='';
+});
 document.getElementById('meetBtn').onclick=async function(){
   if(!sb){ alert('번개모임 기능을 불러오지 못했어요. 인터넷 연결을 확인해주세요.'); return; }
   meetBg.classList.add('open');
-  document.getElementById('meetNameInput').value=getMyName();
+  meetNameInput.value=getMyName();
+  meetNameHint.textContent=getMyName()?'저장됨':'';
   ['meetShopInput','meetTimeInput','meetPlaceInput','meetNoteInput'].forEach(id=>document.getElementById(id).value='');
   meetList.innerHTML='<div class="best-empty">불러오는 중...</div>';
   await renderMeetList();
 };
-document.getElementById('meetClose').onclick=()=>meetBg.classList.remove('open');
-meetBg.addEventListener('click',e=>{ if(e.target===meetBg) meetBg.classList.remove('open'); });
+function closeMeetModal(){
+  meetBg.classList.remove('open');
+  // 모달을 닫으면 열려있던 대화의 자동갱신도 모두 중단
+  meetList.querySelectorAll('.meet-card').forEach(c=>{ if(c._stopChat) c._stopChat(); });
+}
+document.getElementById('meetClose').onclick=closeMeetModal;
+meetBg.addEventListener('click',e=>{ if(e.target===meetBg) closeMeetModal(); });
+/* ── 가게 이름 자동완성(지도에 있는 가게면 카드로 확인) ── */
+const meetShopInput=document.getElementById('meetShopInput');
+const meetShopAC=document.getElementById('meetShopAC');
+const meetShopPicked=document.getElementById('meetShopPicked');
+let pickedShop=null;
+function clearPickedShop(){
+  pickedShop=null; meetShopPicked.style.display='none'; meetShopPicked.innerHTML='';
+}
+function showPickedShop(p){
+  pickedShop=p;
+  const walk=p.walk?`도보 ${p.walk}분`:'';
+  meetShopPicked.innerHTML=`<div class="sp-name">📍 ${escapeHtml(p.n)}</div>
+    <div class="sp-meta">${p.cat}${walk?' · '+walk:''}${p.us?' · 🟢 어스인증':''}</div>
+    <span class="sp-clear">지도에 없는 가게로 직접 입력할래요</span>`;
+  meetShopPicked.style.display='block';
+  meetShopPicked.querySelector('.sp-clear').onclick=()=>{ clearPickedShop(); meetShopInput.focus(); };
+}
+meetShopInput.addEventListener('input',()=>{
+  const q=meetShopInput.value.trim().toLowerCase();
+  clearPickedShop();
+  if(!q){ meetShopAC.classList.remove('on'); return; }
+  const hits=P.filter(p=>p.n.toLowerCase().includes(q)).slice(0,8);
+  if(!hits.length){ meetShopAC.classList.remove('on'); return; }
+  meetShopAC.innerHTML='';
+  hits.forEach(p=>{
+    const el=document.createElement('div'); el.className='shop-ac-item';
+    el.innerHTML=`<span>${escapeHtml(p.n)}</span><span class="ac-cat">${p.cat}</span>${p.walk?`<span class="ac-walk">도보 ${p.walk}분</span>`:''}`;
+    el.onclick=()=>{
+      meetShopInput.value=p.n;
+      meetShopAC.classList.remove('on');
+      showPickedShop(p);
+    };
+    meetShopAC.appendChild(el);
+  });
+  meetShopAC.classList.add('on');
+});
+document.addEventListener('click',e=>{
+  if(!meetShopAC.contains(e.target) && e.target!==meetShopInput) meetShopAC.classList.remove('on');
+});
+
 document.getElementById('meetSubmit').onclick=async()=>{
   const name=document.getElementById('meetNameInput').value.trim();
-  const shop=document.getElementById('meetShopInput').value.trim();
-  const time=document.getElementById('meetTimeInput').value.trim();
+  const shop=meetShopInput.value.trim();
+  const dt=document.getElementById('meetTimeInput').value; // "2026-09-04T12:30"
   if(!name){ document.getElementById('meetNameInput').focus(); return; }
-  if(!shop){ document.getElementById('meetShopInput').focus(); return; }
-  if(!time){ document.getElementById('meetTimeInput').focus(); return; }
+  if(!shop){ meetShopInput.focus(); return; }
+  if(!dt){ alert('언제 만날지 날짜와 시간을 골라주세요.'); document.getElementById('meetTimeInput').focus(); return; }
+  const meetDate=dt.slice(0,10), meetTime=dt.slice(11,16);
+  // 이번 주(월~일) 범위를 벗어나면 목록에 안 보이므로 미리 안내
+  const {from,to}=weekRangeKST();
+  if(meetDate<from || meetDate>to){
+    if(!confirm(`이번 주(${from} ~ ${to}) 밖의 날짜예요.\n목록에는 해당 주에만 보여요. 그래도 올릴까요?`)) return;
+  }
   setMyName(name);
   const btn=document.getElementById('meetSubmit');
   btn.disabled=true; btn.textContent='올리는 중...';
-  const ok=await createMeetup(shop, time, document.getElementById('meetPlaceInput').value, document.getElementById('meetNoteInput').value, name);
+  const ok=await createMeetup(shop, meetTime, document.getElementById('meetPlaceInput').value, document.getElementById('meetNoteInput').value, name, meetDate);
   btn.disabled=false; btn.textContent='모집 올리기';
   if(ok){
     ['meetShopInput','meetTimeInput','meetPlaceInput','meetNoteInput'].forEach(id=>document.getElementById(id).value='');
+    clearPickedShop();
     await renderMeetList();
     await updateMeetBadge();
   } else alert('등록에 실패했어요. 다시 시도해주세요.');
 };
+function fmtMeetWhen(dateStr, timeStr){
+  // "오늘 12:30" / "내일 12:30" / "목 12:30" 형태로 짧게 표시
+  const t=escapeHtml(timeStr||'');
+  if(!dateStr) return t;
+  const today=todayKST();
+  if(dateStr===today) return '오늘 '+t;
+  const tmr=new Date(Date.now()+9*3600*1000+86400000).toISOString().slice(0,10);
+  if(dateStr===tmr) return '내일 '+t;
+  const d=new Date(dateStr+'T00:00:00Z');
+  const wd=['일','월','화','수','목','금','토'][d.getUTCDay()];
+  return `${d.getUTCMonth()+1}/${d.getUTCDate()}(${wd}) ${t}`;
+}
 async function renderMeetList(){
+  // 이전 카드들의 대화 자동갱신 타이머를 먼저 정리(안 하면 안 보이는 곳에서 계속 통신함)
+  meetList.querySelectorAll('.meet-card').forEach(c=>{ if(c._stopChat) c._stopChat(); });
   const meetups=await fetchMeetups();
   if(!meetups.length){
     meetList.innerHTML='<div class="best-empty">오늘 올라온 모집이 없어요.<br>첫 모집을 올려보세요!</div>';
@@ -1057,7 +1186,7 @@ async function renderMeetList(){
     card.innerHTML=`
       <div class="meet-top">
         <div class="meet-shop">${escapeHtml(m.shop)}</div>
-        <div class="meet-time">${escapeHtml(m.meet_at)}</div>
+        <div class="meet-time">${fmtMeetWhen(m.meet_date, m.meet_at)}</div>
       </div>
       <div class="meet-meta">👤 ${escapeHtml(m.host_name)} 모집${m.place?` · 📍 ${escapeHtml(m.place)}`:''}</div>
       ${m.note?`<div class="meet-note">${escapeHtml(m.note)}</div>`:''}
@@ -1069,7 +1198,7 @@ async function renderMeetList(){
       <div class="meet-actions">
         <button class="meet-joinbtn${iJoined?' joined':''}">${iJoined?'✓ 참여 중 (취소)':'+ 나도 갈래요'}</button>
         <button class="meet-chatbtn">💬 대화</button>
-        ${isHost?'<button class="meet-delbtn" title="내 모집 삭제">🗑️</button>':''}
+        ${isHost?'<button class="meet-editbtn" title="내 모집 수정">✏️</button><button class="meet-delbtn" title="내 모집 삭제">🗑️</button>':''}
       </div>
       <div class="meet-chat" style="display:none">
         <div class="meet-chat-list"></div>
@@ -1083,7 +1212,12 @@ async function renderMeetList(){
       if(iJoined){ await leaveMeetup(m.id); }
       else{
         let nm=getMyName();
-        if(!nm){ nm=(prompt('참여할 이름을 입력해주세요')||'').trim(); if(!nm){ b.disabled=false; return; } setMyName(nm); }
+        if(!nm){
+          // 위쪽 "내 이름" 칸으로 안내(이름을 언제든 고칠 수 있는 곳)
+          alert('먼저 위쪽 "내 이름" 칸에 이름을 입력해주세요.');
+          meetNameInput.focus(); meetNameInput.scrollIntoView({block:'center',behavior:'smooth'});
+          b.disabled=false; return;
+        }
         await joinMeetup(m.id, nm);
       }
       await renderMeetList();
@@ -1097,38 +1231,90 @@ async function renderMeetList(){
       if(ok){ await renderMeetList(); await updateMeetBadge(); }
       else { alert('삭제에 실패했어요.'); del.disabled=false; }
     };
+    const edit=card.querySelector('.meet-editbtn');
+    if(edit) edit.onclick=()=>{
+      if(card.querySelector('.meet-editform')) return; // 이미 열려있으면 무시
+      const form=document.createElement('div');
+      form.className='meet-editform';
+      form.innerHTML=`
+        <label>어디서 먹을까요?</label>
+        <input type="text" class="ef-shop" maxlength="60" value="${escapeHtml(m.shop)}">
+        <label>언제 만날까요?</label>
+        <input type="datetime-local" class="ef-time" value="${m.meet_date}T${(m.meet_at||'12:00').slice(0,5)}">
+        <label>어디서 모일까요?</label>
+        <input type="text" class="ef-place" maxlength="60" value="${escapeHtml(m.place||'')}">
+        <label>한마디</label>
+        <input type="text" class="ef-note" maxlength="200" value="${escapeHtml(m.note||'')}">
+        <div class="ef-actions">
+          <button class="ef-save">저장</button>
+          <button class="ef-cancel">취소</button>
+        </div>`;
+      card.appendChild(form);
+      form.querySelector('.ef-cancel').onclick=()=>form.remove();
+      form.querySelector('.ef-save').onclick=async()=>{
+        const shop=form.querySelector('.ef-shop').value.trim();
+        const dt=form.querySelector('.ef-time').value;
+        if(!shop||!dt){ alert('가게와 날짜·시간은 비울 수 없어요.'); return; }
+        const btn=form.querySelector('.ef-save'); btn.disabled=true;
+        const ok=await updateMeetup(m.id,{
+          shop, meet_at:dt.slice(11,16), meet_date:dt.slice(0,10),
+          place:form.querySelector('.ef-place').value.trim()||null,
+          note:form.querySelector('.ef-note').value.trim()||null
+        });
+        if(ok){ await renderMeetList(); }
+        else { alert('수정에 실패했어요. 잠시 후 다시 시도해주세요.'); btn.disabled=false; }
+      };
+    };
     // ── 모집별 대화(기존 reviews 테이블을 "__meetup_<id>" 키로 재사용) ──
     const chatKey='__meetup_'+m.id;
     const chatBox=card.querySelector('.meet-chat');
     const chatList=card.querySelector('.meet-chat-list');
     const chatInput=card.querySelector('.meet-chat-input');
-    async function loadChat(){
-      chatList.innerHTML='<div class="review-empty">불러오는 중...</div>';
+    let chatTimer=null, lastChatSig='';
+    async function loadChat(showLoading){
+      if(showLoading) chatList.innerHTML='<div class="review-empty">불러오는 중...</div>';
       const items=await fetchReviews(chatKey);
+      // 내용이 그대로면 다시 그리지 않음(깜빡임·스크롤 튐 방지)
+      const sig=items.map(i=>i.created_at).join('|');
+      if(sig===lastChatSig && !showLoading) return;
+      lastChatSig=sig;
       if(!items.length){ chatList.innerHTML='<div class="review-empty">아직 대화가 없어요. 첫 메시지를 남겨보세요!</div>'; return; }
+      const atBottom = chatList.scrollHeight - chatList.scrollTop - chatList.clientHeight < 30;
       chatList.innerHTML='';
       items.slice().reverse().forEach(it=>{
         const el=document.createElement('div'); el.className='review-item';
         el.innerHTML=escapeHtml(it.comment);
         chatList.appendChild(el);
       });
-      chatList.scrollTop=chatList.scrollHeight;
+      // 맨 아래를 보고 있었을 때만 자동으로 최신 메시지까지 스크롤(위를 읽는 중이면 방해 안 함)
+      if(atBottom || showLoading) chatList.scrollTop=chatList.scrollHeight;
     }
+    function startChatPolling(){
+      stopChatPolling();
+      chatTimer=setInterval(()=>{ loadChat(false); }, 4000); // 4초마다 새 메시지 확인
+    }
+    function stopChatPolling(){ if(chatTimer){ clearInterval(chatTimer); chatTimer=null; } }
     card.querySelector('.meet-chatbtn').onclick=async(ev)=>{
       const open = chatBox.style.display==='none';
       chatBox.style.display = open?'block':'none';
       ev.currentTarget.textContent = open?'💬 접기':'💬 대화';
-      if(open) await loadChat();
+      if(open){ await loadChat(true); startChatPolling(); }
+      else stopChatPolling(); // 창을 닫으면 즉시 중단(불필요한 통신 방지)
     };
+    card._stopChat = stopChatPolling; // 목록이 다시 그려질 때 정리하기 위해 보관
     async function sendChat(){
       const text=chatInput.value.trim(); if(!text) return;
       let nm=getMyName();
-      if(!nm){ nm=(prompt('이름을 입력해주세요')||'').trim(); if(!nm) return; setMyName(nm); }
+      if(!nm){
+        alert('먼저 위쪽 "내 이름" 칸에 이름을 입력해주세요.');
+        meetNameInput.focus(); meetNameInput.scrollIntoView({block:'center',behavior:'smooth'});
+        return;
+      }
       const btn=card.querySelector('.meet-chat-send');
       btn.disabled=true;
       const ok=await postReview(chatKey, `${nm}: ${text}`);
       btn.disabled=false;
-      if(ok){ chatInput.value=''; await loadChat(); }
+      if(ok){ chatInput.value=''; await loadChat(true); }
       else alert('전송에 실패했어요.');
     }
     card.querySelector('.meet-chat-send').onclick=sendChat;
