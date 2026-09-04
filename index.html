@@ -109,7 +109,7 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .shop-picked{margin-top:-2px;padding:10px 12px;border:1.5px solid var(--us);background:var(--us-bg);border-radius:var(--r-md)}
 .when-preview{margin-top:-2px;padding:9px 12px;border:1.5px solid var(--ct);background:#EAF3FD;border-radius:var(--r-md);font-size:.83rem;font-weight:800;color:#0F4C8A}
 .datetime-row{display:flex;gap:6px;align-items:stretch}
-.datetime-row input[type="datetime-local"]{flex:1;min-width:0;font:inherit;font-size:.86rem;padding:12px 12px;
+.datetime-row input[type="datetime-local"]{flex:1;min-width:0;font:inherit;font-size:.86rem;padding:12px 12px;cursor:pointer;
   border:1.5px solid var(--ct);border-radius:var(--r-md);outline:none;background:#F4F9FF;color:#0F4C8A;font-weight:700}
 .datetime-row input[type="datetime-local"]:focus{border-color:var(--reg);background:#fff}
 .dt-confirm{flex:0 0 auto;border:none;background:var(--ct);color:#fff;font:inherit;font-weight:800;font-size:.84rem;
@@ -1324,17 +1324,27 @@ function refreshWhenUI(){
   meetWhenPreview.style.display='block';
 }
 // "확인" 버튼: 브라우저 기본 달력에는 확인 버튼이 없어서 직접 제공(누르면 달력이 닫힘)
+let dtJustConfirmed=false;
 document.getElementById('meetTimeConfirm').onclick=()=>{
   if(!meetTimeInputEl.value){
     alert('날짜와 시간을 먼저 골라주세요.');
     try{ if(meetTimeInputEl.showPicker) meetTimeInputEl.showPicker(); else meetTimeInputEl.focus(); }catch(e){ meetTimeInputEl.focus(); }
     return;
   }
+  dtJustConfirmed=true; // 확인 직후엔 달력이 다시 열리지 않게 잠깐 잠금
   meetTimeInputEl.blur();
   refreshWhenUI();
+  setTimeout(()=>{ dtJustConfirmed=false; }, 400);
 };
 meetTimeInputEl.addEventListener('change', refreshWhenUI);
 meetTimeInputEl.addEventListener('input', refreshWhenUI);
+// 입력칸 아무 곳이나 눌러도 달력이 열리게(달력 아이콘을 정확히 안 눌러도 되도록)
+function openDatePicker(){
+  if(dtJustConfirmed) return;
+  try{ if(meetTimeInputEl.showPicker) meetTimeInputEl.showPicker(); }catch(e){}
+}
+meetTimeInputEl.addEventListener('click', openDatePicker);
+meetTimeInputEl.addEventListener('focus', openDatePicker);
 
 document.getElementById('meetSubmit').onclick=async()=>{
   const name=document.getElementById('meetNameInput').value.trim();
