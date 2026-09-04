@@ -67,7 +67,7 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .meet-people{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .meet-chip{font-size:.72rem;font-weight:700;background:var(--us-bg);color:#0A6B3A;border-radius:999px;padding:3px 9px}
 .meet-chip.host{background:var(--reg);color:#fff}
-.meet-chip.me{box-shadow:0 0 0 2px var(--ink);font-weight:800}
+.meet-chip.me{background:var(--ink);color:#fff;font-weight:800}
 .meet-chip.total{background:var(--line-soft);color:var(--sub)}
 .meet-actions{display:flex;gap:6px;margin-top:10px}
 .meet-chatbtn{flex:0 0 auto;border:1.5px solid var(--line);background:var(--surface);color:var(--sub-deep);
@@ -1375,8 +1375,8 @@ async function renderMeetList(){
       <div class="meet-meta">👤 ${escapeHtml(m.host_name)} 모집${m.place?` · 📍 ${escapeHtml(m.place)}`:''}</div>
       ${m.note?`<div class="meet-note">${escapeHtml(m.note)}</div>`:''}
       <div class="meet-people">
-        <span class="meet-chip host${isHost?' me':''}">${escapeHtml(m.host_name)}${isHost?' (나)':''}</span>
-        ${joins.map(j=>`<span class="meet-chip${j.user_id===VOTER_ID?' me':''}">${escapeHtml(j.user_name)}${j.user_id===VOTER_ID?' (나)':''}</span>`).join('')}
+        <span class="meet-chip host${isHost?' me':''}">${escapeHtml(m.host_name)}</span>
+        ${joins.map(j=>`<span class="meet-chip${j.user_id===VOTER_ID?' me':''}">${escapeHtml(j.user_name)}</span>`).join('')}
         <span class="meet-chip total">총 ${joins.length+1}명</span>
       </div>
       <div class="meet-actions">
