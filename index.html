@@ -27,13 +27,14 @@ html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;color:var(
 
 /* ── 헤더(모바일=상단 배너, 데스크톱=왼쪽 사이드바) ── */
 header{padding:11px 14px 8px;background:var(--paper);box-shadow:0 1px 0 var(--line);z-index:20;
-  max-height:600px;overflow:hidden;transition:max-height .25s ease,padding .25s ease}
+  max-height:52dvh;overflow-y:auto;overflow-x:hidden;flex:0 0 auto;
+  transition:max-height .25s ease,padding .25s ease}
 @media (min-width:760px){
   header{width:340px;flex:0 0 340px;max-height:none;overflow-y:auto;overflow-x:visible;box-shadow:1px 0 0 var(--line);
     display:flex;flex-direction:column;transition:none}
   header.collapsed{max-height:none;padding:11px 14px 8px} /* 데스크톱에선 "접기" 개념 자체가 없음 - 항상 펼쳐짐 */
 }
-header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none}
+header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;overflow:hidden}
 .hdrtoggle{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:16;
   border:none;border-radius:0 0 14px 14px;background:var(--ink);color:#fff;
   padding:6px 18px 8px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25);
@@ -162,7 +163,7 @@ h1 em{font-style:normal;color:var(--us)}
   white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,.25);pointer-events:none}
 
 /* ── 본문: 데스크톱=좌우분할, 모바일=지도+바텀시트 ── */
-#body{position:relative;flex:1;min-width:0;display:flex;overflow:hidden}
+#body{position:relative;flex:1 1 auto;min-width:0;min-height:40dvh;display:flex;overflow:hidden}
 #map{position:relative;flex:1;min-width:0;background:#EAE4D5}
 .count{position:absolute;top:10px;left:10px;z-index:5;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:5px 10px;font-size:.72rem;font-weight:700;color:var(--sub);box-shadow:var(--sh-1)}
 .count b{color:var(--us)}
