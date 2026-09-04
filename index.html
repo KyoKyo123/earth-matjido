@@ -96,6 +96,14 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .myname-row input{flex:1;min-width:0;font:inherit;font-size:.85rem;padding:8px 11px;border-radius:10px;border:1.5px solid var(--line);outline:none;background:var(--surface)}
 .myname-row input:focus{border-color:var(--reg)}
 .myname-hint{font-size:.68rem;color:var(--us);font-weight:700;flex:0 0 auto}
+.name-guide{margin:-4px 0 12px;border:1.5px solid var(--line);border-radius:var(--r-md);background:var(--surface);overflow:hidden}
+.name-guide summary{padding:9px 12px;font-size:.76rem;font-weight:700;color:var(--ct);cursor:pointer;list-style:none}
+.name-guide summary::-webkit-details-marker{display:none}
+.name-guide summary::before{content:'▸ ';font-weight:800}
+.name-guide[open] summary::before{content:'▾ '}
+.name-guide .ng-body{padding:2px 13px 12px;border-top:1px solid var(--line-soft)}
+.name-guide .ng-body p{font-size:.75rem;line-height:1.65;color:var(--sub-deep);margin:7px 0}
+.name-guide .ng-note{background:var(--line-soft);border-radius:8px;padding:8px 10px;font-size:.72rem;color:var(--sub)}
 .shop-ac-wrap{position:relative}
 .shop-ac-list{position:absolute;left:0;right:0;top:100%;z-index:30;background:var(--surface);
   border:1.5px solid var(--line);border-radius:var(--r-md);box-shadow:0 6px 18px rgba(0,0,0,.14);
@@ -573,6 +581,17 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
       <input type="text" id="meetNameInput" placeholder="이름 입력" maxlength="20">
       <span class="myname-hint" id="meetNameHint"></span>
     </div>
+    <details class="name-guide">
+      <summary>이름은 왜 필요한가요? (눌러서 보기)</summary>
+      <div class="ng-body">
+        <p><b>이름 없이도 대부분 그냥 됩니다.</b> 지도 보기, 검색, 룰렛, 따봉·비추 누르기, <b>익명 한줄평</b>, 맛집 제보는 이름 없이 바로 쓸 수 있어요.</p>
+        <p><b>이름이 필요한 곳은 두 가지</b>예요 — 번개모임(누가 가는지 알아야 하니까), 이름 달고 쓰는 한줄평.</p>
+        <p><b>처음 이름을 쓸 때만 비밀번호 4자리</b>를 정합니다. 이유는 두 가지예요:</p>
+        <p>① <b>내 기록이 안 사라져요</b> — 폰에서 누른 따봉·추천이 회사 PC나 카톡으로 열어도 그대로 이어집니다. 이름+비밀번호만 넣으면 돼요.</p>
+        <p>② <b>사칭을 막아요</b> — 남의 이름으로 글을 쓰려면 그 사람 비밀번호를 알아야 합니다. 그래서 추천·후기가 믿을 만해집니다.</p>
+        <p class="ng-note">비밀번호는 되돌릴 수 없게 암호화되어 저장돼요. <b>운영자도 볼 수 없습니다.</b> 등록한 이름과 작성한 글은 기록으로 남습니다.</p>
+      </div>
+    </details>
     <div class="tip-form">
       <label>어디서 먹을까요? *</label>
       <div class="shop-ac-wrap">
@@ -682,10 +701,76 @@ function getVoterId(){
   if(!id){ id = 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('earthmatjido_voter', id); }
   return id;
 }
-const VOTER_ID = getVoterId();
-// 번개모임용 표시 이름(브라우저에 저장해두고 다음부터 자동 사용)
+let VOTER_ID = getVoterId(); // 이름+PIN으로 다른 기기에서 기록을 이어받을 때 교체됨
+function setVoterId(id){
+  VOTER_ID = id;
+  localStorage.setItem('earthmatjido_voter', id);
+}
+// 표시 이름(브라우저에 저장해두고 다음부터 자동 사용)
 function getMyName(){ return localStorage.getItem('earthmatjido_name') || ''; }
 function setMyName(n){ localStorage.setItem('earthmatjido_name', (n||'').trim().slice(0,20)); }
+
+/* ── 이름 등록/확인 (PIN은 되돌릴 수 없게 변환해서 저장 - 운영자도 원본을 볼 수 없음) ── */
+async function hashPin(name, pin){
+  const data = new TextEncoder().encode('earthmatjido|'+name+'|'+pin);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function findIdentity(name){
+  if(!sb) return null;
+  try{
+    const { data, error } = await sb.from('identities').select('name,pin_hash,owner_id').eq('name', name).maybeSingle();
+    if(error) return null;
+    return data || null;
+  }catch(e){ return null; }
+}
+async function registerIdentity(name, pin){
+  if(!sb) return {ok:false, msg:'연결에 실패했어요.'};
+  try{
+    const hash = await hashPin(name, pin);
+    const { error } = await sb.from('identities').insert({ name, pin_hash: hash, owner_id: VOTER_ID });
+    if(error){
+      if(String(error.message||'').includes('duplicate')) return {ok:false, msg:'이미 등록된 이름이에요.'};
+      return {ok:false, msg:'등록에 실패했어요.'};
+    }
+    setMyName(name);
+    localStorage.setItem('earthmatjido_verified', name);
+    return {ok:true};
+  }catch(e){ return {ok:false, msg:'등록에 실패했어요.'}; }
+}
+async function verifyIdentity(name, pin){
+  const row = await findIdentity(name);
+  if(!row) return {ok:false, msg:'등록되지 않은 이름이에요.'};
+  const hash = await hashPin(name, pin);
+  if(hash !== row.pin_hash) return {ok:false, msg:'비밀번호가 달라요.'};
+  // 본인 확인됨 → 원래 쓰던 기록(따봉·투표·한줄평)을 이어받음
+  setVoterId(row.owner_id);
+  setMyName(name);
+  localStorage.setItem('earthmatjido_verified', name);
+  return {ok:true};
+}
+function isVerifiedAs(name){ return localStorage.getItem('earthmatjido_verified')===name; }
+// 이름을 쓰려 할 때만 호출: 미등록이면 PIN 생성, 등록된 이름이면 PIN 확인
+async function ensureNameRight(name){
+  if(!name) return false;
+  if(isVerifiedAs(name)) return true; // 이 브라우저에서 이미 확인된 이름
+  const row = await findIdentity(name);
+  if(!row){
+    const pin = (prompt(`"${name}" 이름을 처음 쓰시네요.\n비밀번호 4자리를 정해주세요.\n(다른 기기에서 좋아요·추천 기록을 이어받을 때 필요해요)`)||'').trim();
+    if(!/^\d{4}$/.test(pin)){ if(pin) alert('숫자 4자리로 입력해주세요.'); return false; }
+    const r = await registerIdentity(name, pin);
+    if(!r.ok){ alert(r.msg); return false; }
+    alert(`"${name}" 등록 완료!\n다른 기기에서도 이 이름과 비밀번호로 기록을 이어받을 수 있어요.`);
+    return true;
+  }
+  if(row.owner_id===VOTER_ID){ localStorage.setItem('earthmatjido_verified', name); setMyName(name); return true; }
+  const pin = (prompt(`"${name}"은(는) 이미 등록된 이름이에요.\n본인이면 비밀번호 4자리를 입력해주세요.\n(다른 분이면 뒤에 소속 등을 붙여 구분해주세요)`)||'').trim();
+  if(!/^\d{4}$/.test(pin)){ if(pin) alert('숫자 4자리로 입력해주세요.'); return false; }
+  const v = await verifyIdentity(name, pin);
+  if(!v.ok){ alert(v.msg); return false; }
+  alert(`${name}님 확인됐어요.\n이 기기에서도 기존 좋아요·추천 기록이 이어집니다.`);
+  return true;
+}
 async function fetchVoteCounts(shop){
   if(!sb) return {up:0,down:0,soso:0,mine:0};
   try{
@@ -1174,7 +1259,11 @@ async function renderReviewTree(listEl, shopName, onRefresh){
         const txt=f.querySelector('.rf-text').value.trim(); if(!txt) return;
         const named=f.querySelector(`input[name="rm${it.id}"]:checked`).value==='named';
         let nick='';
-        if(named){ nick=f.querySelector('.rf-name').value.trim(); if(!nick){ alert('이름을 입력하거나 익명을 선택해주세요.'); return; } setMyName(nick); }
+        if(named){
+          nick=f.querySelector('.rf-name').value.trim();
+          if(!nick){ alert('이름을 입력하거나 익명을 선택해주세요.'); return; }
+          if(!await ensureNameRight(nick)) return;
+        }
         const b=f.querySelector('.rf-send'); b.disabled=true;
         const ok=await postReview(shopName, txt, nick, it.id);
         b.disabled=false;
@@ -1358,7 +1447,7 @@ document.getElementById('meetSubmit').onclick=async()=>{
   if(meetDate < todayKST()){
     if(!confirm('지난 날짜예요. 목록에는 오늘 이후 약속만 보여요.\n그래도 올릴까요?')) return;
   }
-  setMyName(name);
+  if(!await ensureNameRight(name)) return;
   const btn=document.getElementById('meetSubmit');
   btn.disabled=true; btn.textContent='⏳ 올리는 중...';
   const ok=await createMeetup(shop, meetTime, document.getElementById('meetPlaceInput').value, document.getElementById('meetNoteInput').value, name, meetDate);
@@ -1433,6 +1522,7 @@ async function renderMeetList(){
           meetNameInput.focus(); meetNameInput.scrollIntoView({block:'center',behavior:'smooth'});
           b.disabled=false; return;
         }
+        if(!await ensureNameRight(nm)){ b.disabled=false; return; }
         await joinMeetup(m.id, nm);
       }
       await renderMeetList();
@@ -1667,7 +1757,7 @@ document.getElementById('reviewSubmit').onclick=async()=>{
   if(named){
     nick=document.getElementById('reviewName').value.trim();
     if(!nick){ alert('이름을 입력하거나 익명을 선택해주세요.'); document.getElementById('reviewName').focus(); return; }
-    setMyName(nick);
+    if(!await ensureNameRight(nick)) return;
   }
   const btn=document.getElementById('reviewSubmit');
   btn.disabled=true;
@@ -2065,7 +2155,7 @@ function openPanel(p){
     if(named){
       nick=cardReviewName.value.trim();
       if(!nick){ alert('이름을 입력하거나 익명을 선택해주세요.'); cardReviewName.focus(); return; }
-      setMyName(nick);
+      if(!await ensureNameRight(nick)) return;
     }
     const btn=panel.querySelector('#cardReviewSubmit');
     btn.disabled=true;
