@@ -72,6 +72,9 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .tip-score{font-size:.72rem;color:var(--sub);margin-top:4px}
 .tip-review-hint{font-size:.68rem;color:var(--ct);font-weight:700;margin-top:3px}
 .tip-quickvote{display:flex;gap:4px;flex:0 0 auto;margin-top:2px}
+.tip-mine{font-size:.6rem;font-weight:800;color:var(--us);background:var(--us-bg);border-radius:999px;padding:2px 7px;margin-left:6px;vertical-align:middle}
+.qvbtn.del{border-color:#E5C3BD}
+.qvbtn.del:active{background:#F5DEDA}
 /* 순위 모달 */
 .best-modal .modal{max-width:440px}
 .best-row{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--line-soft);cursor:pointer}
@@ -644,10 +647,19 @@ async function postSuggestion(shop, kakaoUrl, note){
 async function fetchSuggestions(){
   if(!sb) return [];
   try{
-    const { data, error } = await sb.from('suggestions').select('shop,kakao_url,note,created_at').order('created_at',{ascending:false}).limit(50);
+    const { data, error } = await sb.from('suggestions').select('id,shop,kakao_url,note,author,created_at').order('created_at',{ascending:false}).limit(50);
     if(error || !data) return [];
     return data;
   }catch(e){ return []; }
+}
+async function deleteSuggestion(id){
+  if(!sb) return null;
+  try{
+    // 자기가 쓴 것만 지워지도록 author 조건을 함께 걸어 요청
+    const { error } = await sb.from('suggestions').delete().eq('id', id).eq('author', VOTER_ID);
+    if(error) return null;
+    return true;
+  }catch(e){ return null; }
 }
 </script>
 <script>
@@ -884,10 +896,11 @@ async function renderTipList(){
   tipList.innerHTML='';
   for(const s of suggestions){
     const counts = await fetchVoteCounts(s.shop);
+    const isMine = s.author === VOTER_ID;
     const row=document.createElement('div'); row.className='tip-row';
     row.innerHTML=`
       <div class="tip-info">
-        <div class="tip-name">${escapeHtml(s.shop)}</div>
+        <div class="tip-name">${escapeHtml(s.shop)}${isMine?'<span class="tip-mine">내 제보</span>':''}</div>
         ${s.note?`<div class="tip-note">${escapeHtml(s.note)}</div>`:''}
         <div class="tip-score">👍${counts.up} · 😐${counts.soso} · 👎${counts.down}</div>
         <div class="tip-review-hint">💬 한줄평 보기 ›</div>
@@ -896,12 +909,13 @@ async function renderTipList(){
         <button class="qvbtn up" data-v="1" title="추천">👍</button>
         <button class="qvbtn soso" data-v="2" title="소소">😐</button>
         <button class="qvbtn down" data-v="-1" title="비추">👎</button>
+        ${isMine?'<button class="qvbtn del" title="내 제보 삭제">🗑️</button>':''}
       </div>`;
     row.querySelector('.tip-info').onclick=()=>{
       if(s.kakao_url) window.open(s.kakao_url,'_blank','noopener');
       openReviewPanel(s.shop);
     };
-    row.querySelectorAll('.qvbtn').forEach(qb=>{
+    row.querySelectorAll('.qvbtn[data-v]').forEach(qb=>{
       qb.onclick=async(ev)=>{
         ev.stopPropagation();
         qb.disabled=true;
@@ -909,6 +923,15 @@ async function renderTipList(){
         await renderTipList();
       };
     });
+    const delBtn=row.querySelector('.qvbtn.del');
+    if(delBtn) delBtn.onclick=async(ev)=>{
+      ev.stopPropagation();
+      if(!confirm(`"${s.shop}" 제보를 삭제할까요?`)) return;
+      delBtn.disabled=true;
+      const ok=await deleteSuggestion(s.id);
+      if(ok) await renderTipList();
+      else { alert('삭제에 실패했어요.'); delBtn.disabled=false; }
+    };
     tipList.appendChild(row);
   }
 }
