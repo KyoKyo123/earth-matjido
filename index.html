@@ -47,10 +47,6 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .hdrtoggle.up .harrow{transform:rotate(180deg)}
 .titlerow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .officetabs{display:flex;gap:5px;margin-top:9px;background:var(--line-soft);border-radius:var(--r-md);padding:4px}
-.mylikesbtn{margin-top:9px;width:100%;border:1.5px solid var(--us);background:var(--us-bg);color:#0A6B3A;
-  border-radius:var(--r-md);padding:9px;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;transition:background .12s,color .12s}
-.mylikesbtn.on{background:var(--us);color:#fff}
-.mylikesbtn:active{transform:scale(.98)}
 .bestbtn{margin-top:8px;width:100%;border:1.5px solid var(--gold);background:var(--gold-bg);color:#7A5A0A;
   border-radius:var(--r-md);padding:9px;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;transition:background .12s,color .12s}
 .bestbtn:active{transform:scale(.98)}
@@ -71,6 +67,8 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .meet-people{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .meet-chip{font-size:.72rem;font-weight:700;background:var(--us-bg);color:#0A6B3A;border-radius:999px;padding:3px 9px}
 .meet-chip.host{background:var(--reg);color:#fff}
+.meet-chip.me{box-shadow:0 0 0 2px var(--ink);font-weight:800}
+.meet-chip.total{background:var(--line-soft);color:var(--sub)}
 .meet-actions{display:flex;gap:6px;margin-top:10px}
 .meet-chatbtn{flex:0 0 auto;border:1.5px solid var(--line);background:var(--surface);color:var(--sub-deep);
   border-radius:10px;padding:9px 12px;font:inherit;font-size:.78rem;font-weight:700;cursor:pointer}
@@ -96,6 +94,10 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .myname-row input{flex:1;min-width:0;font:inherit;font-size:.85rem;padding:8px 11px;border-radius:10px;border:1.5px solid var(--line);outline:none;background:var(--surface)}
 .myname-row input:focus{border-color:var(--reg)}
 .myname-hint{font-size:.68rem;color:var(--us);font-weight:700;flex:0 0 auto}
+.name-warn{margin:-4px 0 12px;padding:10px 12px;border:1.5px solid #E5B4AC;background:#FDF2F0;border-radius:var(--r-md);
+  font-size:.75rem;line-height:1.6;color:#8A2E1E}
+.name-warn b{color:#B5301A}
+.name-warn .nw-sub{display:block;margin-top:5px;font-size:.7rem;color:#A0665A}
 .name-guide{margin:-4px 0 12px;border:1.5px solid var(--line);border-radius:var(--r-md);background:var(--surface);overflow:hidden}
 .name-guide summary{padding:9px 12px;font-size:.76rem;font-weight:700;color:var(--ct);cursor:pointer;list-style:none}
 .name-guide summary::-webkit-details-marker{display:none}
@@ -524,7 +526,6 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
     <div class="chips pricechips" id="priceChips"></div>
     <button class="chipnext next" id="priceChipsNext" title="더 보기" aria-label="더 보기"></button>
   </div>
-  <button class="mylikesbtn" id="myLikesBtn">👍 나의 따봉 <span id="myLikesCount"></span></button>
   <button class="bestbtn" id="bestBtn">🏆 어스 BEST 순위</button>
   <button class="tipbtn" id="tipBtn">📮 여기 없는 맛집 제보하기</button>
   <button class="meetbtn" id="meetBtn">🔥 같이 여기 먹을 사람? <span id="meetCount"></span></button>
@@ -578,20 +579,14 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
     <div class="desc">같이 갈 사람을 모아보세요. 오늘부터 한 달 안의 약속이 보여요.</div>
     <div class="myname-row">
       <span class="myname-label">👤 내 이름</span>
-      <input type="text" id="meetNameInput" placeholder="이름 입력" maxlength="20">
+      <input type="text" id="meetNameInput" placeholder="본인 이름" maxlength="20">
       <span class="myname-hint" id="meetNameHint"></span>
     </div>
-    <details class="name-guide">
-      <summary>이름은 왜 필요한가요? (눌러서 보기)</summary>
-      <div class="ng-body">
-        <p><b>이름 없이도 대부분 그냥 됩니다.</b> 지도 보기, 검색, 룰렛, 따봉·비추 누르기, <b>익명 한줄평</b>, 맛집 제보는 이름 없이 바로 쓸 수 있어요.</p>
-        <p><b>이름이 필요한 곳은 두 가지</b>예요 — 번개모임(누가 가는지 알아야 하니까), 이름 달고 쓰는 한줄평.</p>
-        <p><b>처음 이름을 쓸 때만 비밀번호 4자리</b>를 정합니다. 이유는 두 가지예요:</p>
-        <p>① <b>내 기록이 안 사라져요</b> — 폰에서 누른 따봉·추천이 회사 PC나 카톡으로 열어도 그대로 이어집니다. 이름+비밀번호만 넣으면 돼요.</p>
-        <p>② <b>사칭을 막아요</b> — 남의 이름으로 글을 쓰려면 그 사람 비밀번호를 알아야 합니다. 그래서 추천·후기가 믿을 만해집니다.</p>
-        <p class="ng-note">비밀번호는 되돌릴 수 없게 암호화되어 저장돼요. <b>운영자도 볼 수 없습니다.</b> 등록한 이름과 작성한 글은 기록으로 남습니다.</p>
-      </div>
-    </details>
+    <div class="name-warn">
+      ⚠️ <b>반드시 본인 이름으로만 참여해주세요.</b><br>
+      남의 이름을 쓰거나 사칭하는 건 <b>절대 금지</b>입니다. 실제로 만나는 약속이라 다른 분들에게 큰 피해가 갑니다.<br>
+      <span class="nw-sub">모집·참여 기록은 모두 남으며, 장난이 확인되면 해당 글은 삭제됩니다.</span>
+    </div>
     <div class="tip-form">
       <label>어디서 먹을까요? *</label>
       <div class="shop-ac-wrap">
@@ -621,11 +616,6 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
     <button class="modal-x" id="reviewClose">✕</button>
     <h2 id="reviewShopName">한줄평</h2>
     <div class="desc">이 가게에 대한 한줄평을 남겨보세요 (200자 이내)</div>
-    <div class="review-mode-row">
-      <label class="rmode"><input type="radio" name="modalRMode" value="anon" checked> 익명으로</label>
-      <label class="rmode"><input type="radio" name="modalRMode" value="named"> 이름으로</label>
-      <input type="text" id="reviewName" class="rname-input" placeholder="이름" maxlength="20" style="display:none">
-    </div>
     <div class="review-input-row">
       <input type="text" id="reviewInput" placeholder="예: 점심 특선이 가성비 좋아요" maxlength="200">
       <button id="reviewSubmit">등록</button>
@@ -701,76 +691,11 @@ function getVoterId(){
   if(!id){ id = 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('earthmatjido_voter', id); }
   return id;
 }
-let VOTER_ID = getVoterId(); // 이름+PIN으로 다른 기기에서 기록을 이어받을 때 교체됨
-function setVoterId(id){
-  VOTER_ID = id;
-  localStorage.setItem('earthmatjido_voter', id);
-}
+const VOTER_ID = getVoterId();
 // 표시 이름(브라우저에 저장해두고 다음부터 자동 사용)
 function getMyName(){ return localStorage.getItem('earthmatjido_name') || ''; }
 function setMyName(n){ localStorage.setItem('earthmatjido_name', (n||'').trim().slice(0,20)); }
 
-/* ── 이름 등록/확인 (PIN은 되돌릴 수 없게 변환해서 저장 - 운영자도 원본을 볼 수 없음) ── */
-async function hashPin(name, pin){
-  const data = new TextEncoder().encode('earthmatjido|'+name+'|'+pin);
-  const buf = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-async function findIdentity(name){
-  if(!sb) return null;
-  try{
-    const { data, error } = await sb.from('identities').select('name,pin_hash,owner_id').eq('name', name).maybeSingle();
-    if(error) return null;
-    return data || null;
-  }catch(e){ return null; }
-}
-async function registerIdentity(name, pin){
-  if(!sb) return {ok:false, msg:'연결에 실패했어요.'};
-  try{
-    const hash = await hashPin(name, pin);
-    const { error } = await sb.from('identities').insert({ name, pin_hash: hash, owner_id: VOTER_ID });
-    if(error){
-      if(String(error.message||'').includes('duplicate')) return {ok:false, msg:'이미 등록된 이름이에요.'};
-      return {ok:false, msg:'등록에 실패했어요.'};
-    }
-    setMyName(name);
-    localStorage.setItem('earthmatjido_verified', name);
-    return {ok:true};
-  }catch(e){ return {ok:false, msg:'등록에 실패했어요.'}; }
-}
-async function verifyIdentity(name, pin){
-  const row = await findIdentity(name);
-  if(!row) return {ok:false, msg:'등록되지 않은 이름이에요.'};
-  const hash = await hashPin(name, pin);
-  if(hash !== row.pin_hash) return {ok:false, msg:'비밀번호가 달라요.'};
-  // 본인 확인됨 → 원래 쓰던 기록(따봉·투표·한줄평)을 이어받음
-  setVoterId(row.owner_id);
-  setMyName(name);
-  localStorage.setItem('earthmatjido_verified', name);
-  return {ok:true};
-}
-function isVerifiedAs(name){ return localStorage.getItem('earthmatjido_verified')===name; }
-// 이름을 쓰려 할 때만 호출: 미등록이면 PIN 생성, 등록된 이름이면 PIN 확인
-async function ensureNameRight(name){
-  if(!name) return false;
-  if(isVerifiedAs(name)) return true; // 이 브라우저에서 이미 확인된 이름
-  const row = await findIdentity(name);
-  if(!row){
-    const pin = (prompt(`"${name}" 이름을 처음 쓰시네요.\n비밀번호 4자리를 정해주세요.\n(다른 기기에서 좋아요·추천 기록을 이어받을 때 필요해요)`)||'').trim();
-    if(!/^\d{4}$/.test(pin)){ if(pin) alert('숫자 4자리로 입력해주세요.'); return false; }
-    const r = await registerIdentity(name, pin);
-    if(!r.ok){ alert(r.msg); return false; }
-    alert(`"${name}" 등록 완료!\n다른 기기에서도 이 이름과 비밀번호로 기록을 이어받을 수 있어요.`);
-    return true;
-  }
-  if(row.owner_id===VOTER_ID){ localStorage.setItem('earthmatjido_verified', name); setMyName(name); return true; }
-  const pin = (prompt(`"${name}"은(는) 이미 등록된 이름이에요.\n본인이면 비밀번호 4자리를 입력해주세요.\n(다른 분이면 뒤에 소속 등을 붙여 구분해주세요)`)||'').trim();
-  if(!/^\d{4}$/.test(pin)){ if(pin) alert('숫자 4자리로 입력해주세요.'); return false; }
-  const v = await verifyIdentity(name, pin);
-  if(!v.ok){ alert(v.msg); return false; }
-  alert(`${name}님 확인됐어요.\n이 기기에서도 기존 좋아요·추천 기록이 이어집니다.`);
-  return true;
-}
 async function fetchVoteCounts(shop){
   if(!sb) return {up:0,down:0,soso:0,mine:0};
   try{
@@ -791,14 +716,6 @@ async function castVote(shop, vote){
     if(error) return null;
     return true;
   }catch(e){ return null; }
-}
-async function fetchMyLikedShops(){
-  if(!sb) return [];
-  try{
-    const { data, error } = await sb.from('votes').select('shop').eq('voter', VOTER_ID).eq('vote', 1);
-    if(error || !data) return [];
-    return data.map(r=>r.shop);
-  }catch(e){ return []; }
 }
 async function fetchTopShops(limit){
   // 전체 votes를 가져와서 가게별로 up/down/soso 집계 후 (추천-비추천) 기준 정렬
@@ -1092,28 +1009,6 @@ function switchOffice(key){
   applyFilter();
   buildCatStepper(); // 거리 기준이 바뀌었으니 룰렛 스테퍼 재고 표시도 갱신
 }
-document.getElementById('myLikesBtn').onclick=async function(){
-  const btn=this;
-  if(myLikesFilter){
-    myLikesFilter=false;
-    btn.classList.remove('on');
-    document.getElementById('myLikesCount').textContent='';
-    closePanel();
-    applyFilter();
-    return;
-  }
-  if(!sb){ alert('투표 기능을 불러오지 못했어요. 인터넷 연결을 확인해주세요.'); return; }
-  btn.disabled=true; btn.textContent='👍 불러오는 중...';
-  const shops=await fetchMyLikedShops();
-  myLikedShops=new Set(shops);
-  myLikesFilter=true;
-  btn.classList.add('on');
-  btn.disabled=false;
-  btn.innerHTML=`👍 나의 따봉 <span id="myLikesCount">${shops.length}곳 · 탭하면 해제</span>`;
-  closePanel();
-  applyFilter();
-};
-
 /* ── 어스 BEST 순위 ── */
 const bestBg=document.getElementById('bestBg'), bestList=document.getElementById('bestList'), bestShowMore=document.getElementById('bestShowMore');
 let bestFullData=[], bestShowingAll=false;
@@ -1237,35 +1132,15 @@ async function renderReviewTree(listEl, shopName, onRefresh){
     if(replyBtn) replyBtn.onclick=()=>{
       if(el.querySelector('.reply-form')) return;
       const f=document.createElement('div'); f.className='reply-form';
-      f.innerHTML=`<div class="review-mode-row">
-          <label class="rmode"><input type="radio" name="rm${it.id}" value="anon" checked> 익명</label>
-          <label class="rmode"><input type="radio" name="rm${it.id}" value="named"> 이름</label>
-          <input type="text" class="rf-name rname-input" placeholder="이름" maxlength="20" style="display:none">
-        </div>
-        <div class="review-input-row" style="margin-bottom:0">
-          <input type="text" class="rf-text" placeholder="답글 입력" maxlength="200">
+      f.innerHTML=`<div class="review-input-row" style="margin-bottom:0">
+          <input type="text" class="rf-text" placeholder="답글 입력 (익명)" maxlength="200">
           <button class="rf-send">등록</button>
         </div>`;
       el.appendChild(f);
-      f.querySelectorAll(`input[name="rm${it.id}"]`).forEach(r=>{
-        r.onchange=()=>{
-          const named=f.querySelector(`input[name="rm${it.id}"]:checked`).value==='named';
-          const ni=f.querySelector('.rf-name');
-          ni.style.display=named?'block':'none';
-          if(named && !ni.value) ni.value=getMyName();
-        };
-      });
       const send=async()=>{
         const txt=f.querySelector('.rf-text').value.trim(); if(!txt) return;
-        const named=f.querySelector(`input[name="rm${it.id}"]:checked`).value==='named';
-        let nick='';
-        if(named){
-          nick=f.querySelector('.rf-name').value.trim();
-          if(!nick){ alert('이름을 입력하거나 익명을 선택해주세요.'); return; }
-          if(!await ensureNameRight(nick)) return;
-        }
         const b=f.querySelector('.rf-send'); b.disabled=true;
-        const ok=await postReview(shopName, txt, nick, it.id);
+        const ok=await postReview(shopName, txt, '', it.id); // 답글도 익명 전용
         b.disabled=false;
         if(ok) refresh(); else alert('등록에 실패했어요.');
       };
@@ -1447,7 +1322,12 @@ document.getElementById('meetSubmit').onclick=async()=>{
   if(meetDate < todayKST()){
     if(!confirm('지난 날짜예요. 목록에는 오늘 이후 약속만 보여요.\n그래도 올릴까요?')) return;
   }
-  if(!await ensureNameRight(name)) return;
+  // 처음 모집을 올릴 때만 본인 이름 확인(매번 묻지 않음)
+  if(!localStorage.getItem('earthmatjido_name_ack')){
+    if(!confirm(`"${name}" 본인 이름이 맞나요?\n\n남의 이름으로 모집하는 건 금지입니다.\n실제로 만나는 약속이라 다른 분들에게 피해가 갑니다.`)) return;
+    localStorage.setItem('earthmatjido_name_ack','1');
+  }
+  setMyName(name);
   const btn=document.getElementById('meetSubmit');
   btn.disabled=true; btn.textContent='⏳ 올리는 중...';
   const ok=await createMeetup(shop, meetTime, document.getElementById('meetPlaceInput').value, document.getElementById('meetNoteInput').value, name, meetDate);
@@ -1495,9 +1375,9 @@ async function renderMeetList(){
       <div class="meet-meta">👤 ${escapeHtml(m.host_name)} 모집${m.place?` · 📍 ${escapeHtml(m.place)}`:''}</div>
       ${m.note?`<div class="meet-note">${escapeHtml(m.note)}</div>`:''}
       <div class="meet-people">
-        <span class="meet-chip host">${escapeHtml(m.host_name)}</span>
-        ${joins.map(j=>`<span class="meet-chip">${escapeHtml(j.user_name)}</span>`).join('')}
-        <span class="meet-chip" style="background:var(--line-soft);color:var(--sub)">총 ${joins.length+1}명</span>
+        <span class="meet-chip host${isHost?' me':''}">${escapeHtml(m.host_name)}${isHost?' (나)':''}</span>
+        ${joins.map(j=>`<span class="meet-chip${j.user_id===VOTER_ID?' me':''}">${escapeHtml(j.user_name)}${j.user_id===VOTER_ID?' (나)':''}</span>`).join('')}
+        <span class="meet-chip total">총 ${joins.length+1}명</span>
       </div>
       <div class="meet-actions">
         <button class="meet-joinbtn${iJoined?' joined':''}">${iJoined?'✓ 참여 중 (취소)':'+ 나도 갈래요'}</button>
@@ -1522,7 +1402,6 @@ async function renderMeetList(){
           meetNameInput.focus(); meetNameInput.scrollIntoView({block:'center',behavior:'smooth'});
           b.disabled=false; return;
         }
-        if(!await ensureNameRight(nm)){ b.disabled=false; return; }
         await joinMeetup(m.id, nm);
       }
       await renderMeetList();
@@ -1738,30 +1617,14 @@ async function renderTipList(){
 }
 document.getElementById('reviewClose').onclick=()=>reviewBg.classList.remove('open');
 reviewBg.addEventListener('click',e=>{ if(e.target===reviewBg) reviewBg.classList.remove('open'); });
-// BEST 모달: 익명/이름 전환
-document.querySelectorAll('input[name="modalRMode"]').forEach(r=>{
-  r.onchange=()=>{
-    const named=document.querySelector('input[name="modalRMode"]:checked').value==='named';
-    const ni=document.getElementById('reviewName');
-    ni.style.display=named?'block':'none';
-    if(named && !ni.value) ni.value=getMyName();
-  };
-});
 document.getElementById('reviewSubmit').onclick=async()=>{
   if(!sb) return;
   const input=document.getElementById('reviewInput');
   const text=input.value.trim();
   if(!text) return;
-  const named=document.querySelector('input[name="modalRMode"]:checked').value==='named';
-  let nick='';
-  if(named){
-    nick=document.getElementById('reviewName').value.trim();
-    if(!nick){ alert('이름을 입력하거나 익명을 선택해주세요.'); document.getElementById('reviewName').focus(); return; }
-    if(!await ensureNameRight(nick)) return;
-  }
   const btn=document.getElementById('reviewSubmit');
   btn.disabled=true;
-  const ok=await postReview(currentReviewShop, text, nick);
+  const ok=await postReview(currentReviewShop, text, ''); // 한줄평은 익명 전용
   btn.disabled=false;
   if(ok){ input.value=''; loadReviews(); }
   else alert('등록에 실패했어요. 다시 시도해주세요.');
@@ -1790,16 +1653,8 @@ P.forEach(p=>{
   p.dist=rt?rt.d:p.straight;
   p.walk=rt?Math.max(1,Math.round(rt.t/60)):Math.max(1,Math.round(p.straight*1.35/67));
 });
-let myLikesFilter=false, myLikedShops=new Set();
-function clearMyLikesFilter(){
-  if(!myLikesFilter) return;
-  myLikesFilter=false;
-  const btn=document.getElementById('myLikesBtn');
-  btn.classList.remove('on');
-  btn.innerHTML='👍 나의 따봉 <span id="myLikesCount"></span>';
-}
+
 function matchCat(p){
-  if(myLikesFilter) return myLikedShops.has(p.n); // 나의 따봉 모드: 다른 조건 다 무시하고 이것만
   const c=active==="전체"?true:active==="어스인증"?!!p.us:p.cat===active;
   if(!c)return false;
   if(priceFilter && !(p.tier||[]).includes(priceFilter)) return false;
@@ -1882,7 +1737,7 @@ function buildChips(){
   CATS.forEach(c=>{const b=document.createElement('button');
     b.className='chip'+(c==='어스인증'?' us':'')+(c==='전체'?' on':'');
     b.textContent=c==='어스인증'?'🟢 어스인증':c;
-    b.onclick=()=>{clearMyLikesFilter();active=c;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
+    b.onclick=()=>{active=c;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
     wrap.appendChild(b);});
   setupChipFade(wrap);
   buildTimeChips();
@@ -1893,7 +1748,7 @@ function buildTimeChips(){
   TIME_OPTS.forEach(t=>{const b=document.createElement('button');
     b.className='chip time'+(t.v===0?' on':'');
     b.textContent=t.l;
-    b.onclick=()=>{clearMyLikesFilter();timeFilter=t.v;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
+    b.onclick=()=>{timeFilter=t.v;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
     wrap.appendChild(b);});
   setupChipFade(wrap);
   buildPriceChips();
@@ -1904,7 +1759,7 @@ function buildPriceChips(){
   PRICE_OPTS.forEach(t=>{const b=document.createElement('button');
     b.className='chip price'+(t.v===0?' on':'');
     b.textContent=t.l;
-    b.onclick=()=>{clearMyLikesFilter();priceFilter=t.v;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
+    b.onclick=()=>{priceFilter=t.v;[...wrap.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');applyFilter();};
     wrap.appendChild(b);});
   setupChipFade(wrap);
 }
@@ -2101,13 +1956,8 @@ function openPanel(p){
     </div>
     <div class="review-section">
       <div class="review-title">💬 한줄평</div>
-      <div class="review-mode-row">
-        <label class="rmode"><input type="radio" name="cardRMode" value="anon" checked> 익명으로</label>
-        <label class="rmode"><input type="radio" name="cardRMode" value="named"> 이름으로</label>
-        <input type="text" id="cardReviewName" class="rname-input" placeholder="이름" maxlength="20" style="display:none">
-      </div>
       <div class="review-input-row">
-        <input type="text" id="cardReviewInput" placeholder="한줄평을 남겨보세요" maxlength="200">
+        <input type="text" id="cardReviewInput" placeholder="한줄평을 남겨보세요 (익명)" maxlength="200">
         <button id="cardReviewSubmit">등록</button>
       </div>
       <div class="review-list" id="cardReviewList"></div>
@@ -2132,15 +1982,6 @@ function openPanel(p){
   setupSheetDrag();
   // 카드 안 한줄평 섹션 초기화
   const cardReviewList=panel.querySelector('#cardReviewList');
-  const cardReviewName=panel.querySelector('#cardReviewName');
-  // 익명/이름 선택: 이름 모드일 때만 이름칸이 보임
-  panel.querySelectorAll('input[name="cardRMode"]').forEach(radio=>{
-    radio.onchange=()=>{
-      const named = panel.querySelector('input[name="cardRMode"]:checked').value==='named';
-      cardReviewName.style.display = named?'block':'none';
-      if(named && !cardReviewName.value) cardReviewName.value=getMyName();
-    };
-  });
   async function renderCardReviews(){
     await renderReviewTree(cardReviewList, p.n, renderCardReviews);
   }
@@ -2150,16 +1991,9 @@ function openPanel(p){
     if(!sb) return;
     const input=panel.querySelector('#cardReviewInput');
     const text=input.value.trim(); if(!text) return;
-    const named = panel.querySelector('input[name="cardRMode"]:checked').value==='named';
-    let nick='';
-    if(named){
-      nick=cardReviewName.value.trim();
-      if(!nick){ alert('이름을 입력하거나 익명을 선택해주세요.'); cardReviewName.focus(); return; }
-      if(!await ensureNameRight(nick)) return;
-    }
     const btn=panel.querySelector('#cardReviewSubmit');
     btn.disabled=true;
-    const ok=await postReview(p.n, text, nick);
+    const ok=await postReview(p.n, text, ''); // 한줄평은 익명 전용
     btn.disabled=false;
     if(ok){ input.value=''; await renderCardReviews(); }
     else alert('등록에 실패했어요. 다시 시도해주세요.');
@@ -2252,7 +2086,7 @@ document.getElementById('hdrToggle').onclick=function(){
   hdr.addEventListener('transitionend',kick,{once:true});
 };
 const qi=document.getElementById('q'),qc=document.getElementById('qclr');
-qi.addEventListener('input',()=>{clearMyLikesFilter();q=qi.value.trim().toLowerCase();qc.classList.toggle('on',!!q);closePanel();applyFilter();
+qi.addEventListener('input',()=>{q=qi.value.trim().toLowerCase();qc.classList.toggle('on',!!q);closePanel();applyFilter();
   const pts=P.filter(matchCat); if(q&&pts.length){const b=new kakao.maps.LatLngBounds();pts.forEach(p=>b.extend(new kakao.maps.LatLng(p.lat,p.lng)));map.setBounds(b);}});
 qc.onclick=()=>{qi.value="";q="";qc.classList.remove('on');applyFilter();qi.focus();};
 
