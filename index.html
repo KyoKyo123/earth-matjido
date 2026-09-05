@@ -152,12 +152,12 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .cap-val{min-width:100px;text-align:center;font-size:.9rem;font-weight:800;color:var(--ink)}
 .cap-hint{font-size:.7rem;color:var(--sub);text-align:center;margin-top:-4px}
 .datetime-row{display:flex;gap:6px;align-items:stretch}
-.datetime-row input[type="datetime-local"]{flex:1;min-width:0;font:inherit;font-size:.86rem;padding:12px 12px;cursor:pointer;
+.datetime-row input[type="date"],.datetime-row select{flex:1;min-width:0;font:inherit;font-size:.86rem;padding:12px 10px;cursor:pointer;
   border:1.5px solid var(--ct);border-radius:var(--r-md);outline:none;background:#F4F9FF;color:#0F4C8A;font-weight:700}
-.datetime-row input[type="datetime-local"]:focus{border-color:var(--reg);background:#fff}
-.dt-confirm{flex:0 0 auto;border:none;background:var(--ct);color:#fff;font:inherit;font-weight:800;font-size:.84rem;
-  padding:0 18px;border-radius:var(--r-md);cursor:pointer}
-.dt-confirm:active{transform:scale(.97)}
+.datetime-row input[type="date"]:focus,.datetime-row select:focus{border-color:var(--reg);background:#fff}
+.datetime-row select{appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230F4C8A'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 6px center;background-size:18px;padding-right:26px}
 .shop-picked .sp-name{font-size:.85rem;font-weight:800;color:#0A6B3A}
 .shop-picked .sp-meta{font-size:.72rem;color:var(--sub-deep);margin-top:3px}
 .shop-picked .sp-clear{font-size:.7rem;color:var(--sub);text-decoration:underline;cursor:pointer;margin-top:5px;display:inline-block}
@@ -639,9 +639,10 @@ footer{padding:6px 14px calc(6px + env(safe-area-inset-bottom));font-size:.64rem
       <div class="shop-picked" id="meetShopPicked" style="display:none"></div>
       <label>언제 만날까요? *</label>
       <div class="datetime-row">
-        <input type="datetime-local" id="meetTimeInput" step="300">
-        <button type="button" class="dt-confirm" id="meetTimeConfirm">확인</button>
+        <input type="date" id="meetDateInput">
+        <select id="meetTimeSelect"><option value="">시간</option></select>
       </div>
+      <input type="hidden" id="meetTimeInput">
       <div class="when-preview" id="meetWhenPreview" style="display:none"></div>
       <label>어디서 모일까요?</label>
       <input type="text" id="meetPlaceInput" placeholder="예: 스퀘어 1층" maxlength="60">
@@ -937,9 +938,21 @@ async function createMeetup(shop, meetAt, place, note, hostName, meetDate, capac
 }
 async function joinMeetup(meetupId, name){
   if(!sb) return null;
+  const nm=(name||'').trim().slice(0,20);
+  if(!nm) return null;
   try{
+    // 같은 이름이 이미 명단에 있으면 새로 추가하지 않고 그 기록을 이 기기로 넘겨받음
+    // (PC에서 참여했다가 폰으로 들어와도 중복으로 안 쌓이고 "참여 중"으로 인식됨)
+    const { data: exist } = await sb.from('meetup_joins')
+      .select('id,user_id').eq('meetup_id', meetupId).eq('user_name', nm).maybeSingle();
+    if(exist){
+      if(exist.user_id===VOTER_ID) return true; // 이미 이 기기로 참여 중
+      const { error: upErr } = await sb.from('meetup_joins')
+        .update({ user_id: VOTER_ID }).eq('id', exist.id);
+      return upErr ? null : true;
+    }
     const { error } = await sb.from('meetup_joins').insert({
-      meetup_id:meetupId, user_name:(name||'').trim().slice(0,20), user_id:VOTER_ID
+      meetup_id:meetupId, user_name:nm, user_id:VOTER_ID
     });
     if(error) return null;
     return true;
@@ -1307,6 +1320,7 @@ document.getElementById('meetBtn').onclick=async function(){
   meetBg.classList.add('open');
   lockNameUI();
   ['meetShopInput','meetTimeInput','meetPlaceInput','meetNoteInput'].forEach(id=>document.getElementById(id).value='');
+  meetDateInput.value=''; meetTimeSelect.value='';
   if(typeof refreshWhenUI==='function') refreshWhenUI();
   if(typeof clearPickedShop==='function') clearPickedShop();
   meetList.innerHTML='<div class="best-empty">불러오는 중...</div>';
@@ -1360,36 +1374,39 @@ document.addEventListener('click',e=>{
 });
 
 // 날짜·시간 선택: 큰 버튼을 눌러 달력을 열고, 고른 값을 버튼에 바로 표시
-const meetTimeInputEl=document.getElementById('meetTimeInput');
-const meetWhenPreview=document.getElementById('meetWhenPreview');
+const meetTimeInputEl=document.getElementById('meetTimeInput'); // 최종 값(YYYY-MM-DDTHH:MM) 보관용
+const meetDateInput=document.getElementById('meetDateInput');
+const meetTimeSelect=document.getElementById('meetTimeSelect');
+// 시간은 5분 단위 목록으로 제공(PC 크롬은 datetime-local의 step을 무시해서 직접 만든다)
+(function buildTimeOptions(){
+  let html='<option value="">시간 선택</option>';
+  for(let h=0; h<24; h++){
+    for(let m=0; m<60; m+=5){
+      const hh=String(h).padStart(2,'0'), mm=String(m).padStart(2,'0');
+      const ampm = h<12 ? '오전' : '오후';
+      const h12 = h%12===0 ? 12 : h%12;
+      html += `<option value="${hh}:${mm}">${ampm} ${h12}:${mm}</option>`;
+    }
+  }
+  meetTimeSelect.innerHTML=html;
+})();
 function refreshWhenUI(){
   const v=meetTimeInputEl.value;
-  if(!v){ meetWhenPreview.style.display='none'; return; }
-  meetWhenPreview.textContent='🗓️ '+fmtMeetWhen(v.slice(0,10), v.slice(11,16))+' 로 선택됨';
-  meetWhenPreview.style.display='block';
+  const pv=document.getElementById('meetWhenPreview');
+  if(!v){ pv.style.display='none'; return; }
+  pv.textContent='🗓️ '+fmtMeetWhen(v.slice(0,10), v.slice(11,16))+' 로 선택됨';
+  pv.style.display='block';
 }
-// "확인" 버튼: 브라우저 기본 달력에는 확인 버튼이 없어서 직접 제공(누르면 달력이 닫힘)
-let dtJustConfirmed=false;
-document.getElementById('meetTimeConfirm').onclick=()=>{
-  if(!meetTimeInputEl.value){
-    alert('날짜와 시간을 먼저 골라주세요.');
-    try{ if(meetTimeInputEl.showPicker) meetTimeInputEl.showPicker(); else meetTimeInputEl.focus(); }catch(e){ meetTimeInputEl.focus(); }
-    return;
-  }
-  dtJustConfirmed=true; // 확인 직후엔 달력이 다시 열리지 않게 잠깐 잠금
-  meetTimeInputEl.blur();
+function syncMeetDateTime(){
+  const d=meetDateInput.value, t=meetTimeSelect.value;
+  meetTimeInputEl.value = (d && t) ? `${d}T${t}` : '';
   refreshWhenUI();
-  setTimeout(()=>{ dtJustConfirmed=false; }, 400);
-};
-meetTimeInputEl.addEventListener('change', refreshWhenUI);
-meetTimeInputEl.addEventListener('input', refreshWhenUI);
-// 입력칸 아무 곳이나 눌러도 달력이 열리게(달력 아이콘을 정확히 안 눌러도 되도록)
-function openDatePicker(){
-  if(dtJustConfirmed) return;
-  try{ if(meetTimeInputEl.showPicker) meetTimeInputEl.showPicker(); }catch(e){}
 }
-meetTimeInputEl.addEventListener('click', openDatePicker);
-meetTimeInputEl.addEventListener('focus', openDatePicker);
+meetDateInput.addEventListener('change', syncMeetDateTime);
+meetTimeSelect.addEventListener('change', syncMeetDateTime);
+// 날짜칸 아무 곳이나 누르면 달력이 열리게
+meetDateInput.addEventListener('click',()=>{ try{ if(meetDateInput.showPicker) meetDateInput.showPicker(); }catch(e){} });
+meetDateInput.min = todayKST(); // 지난 날짜는 아예 못 고르게
 
 /* 모집 인원 선택 (주최자 포함 인원) */
 let meetCapacity=0; // 0 = 제한 없음
@@ -1446,6 +1463,7 @@ document.getElementById('meetSubmit').onclick=async()=>{
   btn.disabled=false; btn.textContent='✓ 이 내용으로 모집 올리기';
   if(ok){
     ['meetShopInput','meetTimeInput','meetPlaceInput','meetNoteInput'].forEach(id=>document.getElementById(id).value='');
+  meetDateInput.value=''; meetTimeSelect.value='';
     clearPickedShop();
     meetCapacity=0; refreshCapUI();
     refreshWhenUI(); // 날짜 버튼도 초기 상태로
@@ -1453,6 +1471,18 @@ document.getElementById('meetSubmit').onclick=async()=>{
     await updateMeetBadge();
   } else alert('등록에 실패했어요. 다시 시도해주세요.');
 };
+function timeOptionsHtml(selected){
+  let html='';
+  for(let h=0; h<24; h++){
+    for(let m=0; m<60; m+=5){
+      const hh=String(h).padStart(2,'0'), mm=String(m).padStart(2,'0');
+      const val=hh+':'+mm;
+      const ampm=h<12?'오전':'오후', h12=h%12===0?12:h%12;
+      html+=`<option value="${val}"${val===selected?' selected':''}>${ampm} ${h12}:${mm}</option>`;
+    }
+  }
+  return html;
+}
 function round5(t){
   // 5분 단위 입력칸이 기존 값(예: 00:44)을 거부하지 않도록 가까운 5분으로 맞춰줌
   const m=String(t||'12:00').match(/(\d{1,2}):(\d{2})/);
@@ -1571,7 +1601,10 @@ async function renderMeetList(){
         <label>어디서 먹을까요?</label>
         <input type="text" class="ef-shop" maxlength="60" value="${escapeHtml(m.shop)}">
         <label>언제 만날까요?</label>
-        <input type="datetime-local" class="ef-time" step="300" value="${m.meet_date}T${round5(m.meet_at)}">
+        <div class="datetime-row">
+          <input type="date" class="ef-date" value="${m.meet_date}">
+          <select class="ef-timesel">${timeOptionsHtml(round5(m.meet_at))}</select>
+        </div>
         <label>어디서 모일까요?</label>
         <input type="text" class="ef-place" maxlength="60" value="${escapeHtml(m.place||'')}">
         <label>한마디</label>
@@ -1584,11 +1617,11 @@ async function renderMeetList(){
       form.querySelector('.ef-cancel').onclick=()=>form.remove();
       form.querySelector('.ef-save').onclick=async()=>{
         const shop=form.querySelector('.ef-shop').value.trim();
-        const dt=form.querySelector('.ef-time').value;
-        if(!shop||!dt){ alert('가게와 날짜·시간은 비울 수 없어요.'); return; }
+        const ed=form.querySelector('.ef-date').value, et=form.querySelector('.ef-timesel').value;
+        if(!shop||!ed||!et){ alert('가게와 날짜·시간은 비울 수 없어요.'); return; }
         const btn=form.querySelector('.ef-save'); btn.disabled=true;
         const ok=await updateMeetup(m.id,{
-          shop, meet_at:dt.slice(11,16), meet_date:dt.slice(0,10),
+          shop, meet_at:et, meet_date:ed,
           place:form.querySelector('.ef-place').value.trim()||null,
           note:form.querySelector('.ef-note').value.trim()||null
         });
