@@ -2,7 +2,9 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="color-scheme" content="light only">
+<meta name="theme-color" content="#FBF7EE">
 <title>어스 맛집 대동여지도</title>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -18,16 +20,21 @@
   --panel-w:400px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+:root{color-scheme:light only}
 html,body{height:100%;font-family:'Noto Sans KR',system-ui,sans-serif;color:var(--ink);background:var(--paper);overflow:hidden}
-#app{display:flex;flex-direction:column;height:100dvh}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
 @media (min-width:760px){
   /* 데스크톱: 카카오맵처럼 왼쪽 사이드바(검색·룰렛·필터) + 오른쪽 지도 전체 */
   #app{flex-direction:row}
 }
 
+/* iOS 사파리: 입력창 폰트가 16px 미만이면 탭할 때 화면이 자동 확대되어 레이아웃이 밀림 → iOS에서만 16px로 */
+@supports (-webkit-touch-callout: none) {
+  input[type="text"], input[type="datetime-local"], input[type="search"], textarea, select { font-size:16px !important; }
+}
 /* ── 헤더(모바일=상단 배너, 데스크톱=왼쪽 사이드바) ── */
-header{padding:11px 14px 8px;background:var(--paper);box-shadow:0 1px 0 var(--line);z-index:20;
-  max-height:52dvh;overflow-y:auto;overflow-x:hidden;flex:0 0 auto;
+header{padding:calc(11px + env(safe-area-inset-top)) 14px 8px;background:var(--paper);box-shadow:0 1px 0 var(--line);z-index:20;
+  max-height:52vh;max-height:52dvh;overflow-y:auto;overflow-x:hidden;flex:0 0 auto;
   transition:max-height .25s ease,padding .25s ease}
 @media (min-width:760px){
   header{width:340px;flex:0 0 340px;max-height:none;overflow-y:auto;overflow-x:visible;box-shadow:1px 0 0 var(--line);
@@ -280,7 +287,7 @@ h1 em{font-style:normal;color:var(--us)}
   white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,.25);pointer-events:none}
 
 /* ── 본문: 데스크톱=좌우분할, 모바일=지도+바텀시트 ── */
-#body{position:relative;flex:1 1 auto;min-width:0;min-height:40dvh;display:flex;overflow:hidden}
+#body{position:relative;flex:1 1 auto;min-width:0;min-height:40vh;min-height:40dvh;display:flex;overflow:hidden}
 #map{position:relative;flex:1;min-width:0;background:#EAE4D5}
 .count{position:absolute;top:10px;left:10px;z-index:5;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:5px 10px;font-size:.72rem;font-weight:700;color:var(--sub);box-shadow:var(--sh-1)}
 .count b{color:var(--us)}
@@ -358,7 +365,7 @@ h1 em{font-style:normal;color:var(--us)}
 .review-section{margin-top:18px;padding-top:14px;border-top:1.5px dashed var(--line)}
 .closebtn{background:var(--surface);border-color:var(--line)!important;color:var(--sub)}
 
-footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);box-shadow:0 -1px 0 var(--line)}
+footer{padding:6px 14px calc(6px + env(safe-area-inset-bottom));font-size:.64rem;color:#A79C87;background:var(--paper);box-shadow:0 -1px 0 var(--line)}
 @media (min-width:760px){
   footer{margin-top:auto} /* 데스크톱: 사이드바 맨 아래 고정 */
 }
@@ -716,15 +723,22 @@ const SB_URL="https://evhiixhyqpsbwssxukxx.supabase.co";
 const SB_KEY="sb_publishable_ucfFkIfGUjcx9pOif0fOXQ_o4Argobe";
 let sb = null;
 try{ if(window.supabase) sb = window.supabase.createClient(SB_URL, SB_KEY); }catch(e){ sb=null; }
+// localStorage가 막힌 환경(카톡 인앱·시크릿모드 등)에서도 앱이 죽지 않도록 안전하게 감쌈
+const __memStore={};
+const LS={
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return __memStore[k]||null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){ __memStore[k]=String(v); } },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){ delete __memStore[k]; } }
+};
 function getVoterId(){
-  let id = localStorage.getItem('earthmatjido_voter');
-  if(!id){ id = 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('earthmatjido_voter', id); }
+  let id = LS.get('earthmatjido_voter');
+  if(!id){ id = 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36); LS.set('earthmatjido_voter', id); }
   return id;
 }
 const VOTER_ID = getVoterId();
 // 표시 이름(브라우저에 저장해두고 다음부터 자동 사용)
-function getMyName(){ return localStorage.getItem('earthmatjido_name') || ''; }
-function setMyName(n){ localStorage.setItem('earthmatjido_name', (n||'').trim().slice(0,20)); }
+function getMyName(){ return LS.get('earthmatjido_name') || ''; }
+function setMyName(n){ LS.set('earthmatjido_name', (n||'').trim().slice(0,20)); }
 
 async function fetchVoteCounts(shop){
   if(!sb) return {up:0,down:0,soso:0,mine:0};
@@ -1396,14 +1410,21 @@ document.getElementById('meetSubmit').onclick=async()=>{
   if(!shop){ meetShopInput.focus(); return; }
   if(!dt){ alert('언제 만날지 날짜와 시간을 골라주세요.'); document.getElementById('meetTimeInput').focus(); return; }
   const meetDate=dt.slice(0,10), meetTime=dt.slice(11,16);
-  // 지난 날짜는 목록에 안 뜨므로 그것만 안내
-  if(meetDate < todayKST()){
-    if(!confirm('지난 날짜예요. 목록에는 오늘 이후 약속만 보여요.\n그래도 올릴까요?')) return;
+  // 이미 지나버린 약속은 등록해도 목록에 안 뜨므로 미리 알려줌
+  // (약속 시간 +1시간이 지나면 자동으로 숨겨지는 규칙 때문)
+  const nowKST=new Date(Date.now()+9*3600*1000);
+  const meetEnd=new Date(meetDate+'T00:00:00Z');
+  meetEnd.setUTCHours(parseInt(meetTime.slice(0,2)), parseInt(meetTime.slice(3,5)), 0, 0);
+  meetEnd.setUTCHours(meetEnd.getUTCHours()+1);
+  if(nowKST > meetEnd){
+    alert('이미 지난 시간이에요.\n\n약속은 시간이 1시간 지나면 목록에서 사라지기 때문에,\n지금 올려도 보이지 않아요.\n\n앞으로의 날짜·시간으로 다시 골라주세요!');
+    document.getElementById('meetTimeInput').focus();
+    return;
   }
   // 처음 모집을 올릴 때만 본인 이름 확인(매번 묻지 않음)
-  if(!localStorage.getItem('earthmatjido_name_ack')){
+  if(!LS.get('earthmatjido_name_ack')){
     if(!confirm(`"${name}" 이름으로 모집을 올릴게요!\n\n만났을 때 서로 알아볼 수 있게\n본인 이름이나 별명이 맞는지 한 번만 확인해주세요 😊`)) return;
-    localStorage.setItem('earthmatjido_name_ack','1');
+    LS.set('earthmatjido_name_ack','1');
   }
   setMyName(name);
   const btn=document.getElementById('meetSubmit');
@@ -1436,7 +1457,7 @@ async function renderMeetList(){
   meetList.querySelectorAll('.meet-card').forEach(c=>{ if(c._stopChat) c._stopChat(); });
   const meetups=await fetchMeetups();
   if(!meetups.length){
-    meetList.innerHTML='<div class="best-empty">오늘 올라온 모집이 없어요.<br>첫 모집을 올려보세요!</div>';
+    meetList.innerHTML='<div class="best-empty">지금 모집 중인 약속이 없어요.<br>첫 모집을 올려보세요!<br><span style="font-size:.72rem;color:var(--sub);display:block;margin-top:8px">약속 시간이 1시간 지나면 목록에서 자동으로 사라져요</span></div>';
     return;
   }
   meetList.innerHTML='';
@@ -1640,7 +1661,7 @@ function findMapShop(shopName){
 }
 async function migrateSuggestionNotes(doneList){
   // 지도에 반영된 제보의 "한마디"를 그 가게 한줄평으로 자동 이관(한 번만)
-  const migrated = JSON.parse(localStorage.getItem('earthmatjido_migrated')||'[]');
+  const migrated = JSON.parse(LS.get('earthmatjido_migrated')||'[]');
   for(const s of doneList){
     if(!s.note || migrated.includes(s.id)) continue;
     const shop=findMapShop(s.shop);
@@ -1651,7 +1672,7 @@ async function migrateSuggestionNotes(doneList){
     const ok=await postReview(shop.n, s.note, ''); // 익명으로 남김
     if(ok) migrated.push(s.id);
   }
-  localStorage.setItem('earthmatjido_migrated', JSON.stringify(migrated.slice(-200)));
+  LS.set('earthmatjido_migrated', JSON.stringify(migrated.slice(-200)));
 }
 async function renderTipList(){
   const all = await fetchSuggestions();
@@ -2739,6 +2760,6 @@ document.getElementById('rerollBtn').onclick=()=>{
 setTimeout(()=>{if(!window.kakao||!kakao.maps||!map)initKakao();},300);
 setTimeout(()=>{if(!map)bootError('<b>카카오 지도 로딩 실패(타임아웃).</b><br>도메인 등록·앱키를 확인해주세요. GitHub Pages 주소로 열어야 동작합니다.');},5000);
 </script>
-<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=177c28ed6f39af5ef37b1cc2c863971c&autoload=false&libraries=services" onload="initKakao()" onerror="bootError('<b>SDK 스크립트를 불러오지 못했어요.</b><br>도메인 등록 여부·네트워크를 확인해주세요.')"></script>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=177c28ed6f39af5ef37b1cc2c863971c&autoload=false&libraries=services" onload="initKakao()" onerror="bootError('<b>SDK 스크립트를 불러오지 못했어요.</b><br>도메인 등록 여부·네트워크를 확인해주세요.')"></script>
 </body>
 </html>
