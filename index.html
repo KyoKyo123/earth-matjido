@@ -92,9 +92,8 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .meet-chatbtn:active{background:var(--line-soft)}
 .meet-chat{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
 .meet-chat-list{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto}
-.chat-as{margin-top:8px;font-size:.72rem;color:var(--sub-deep);background:var(--line-soft);border-radius:8px;padding:6px 10px}
-.chat-as b{color:var(--reg-deep)}
-.chat-as .ca-why{color:var(--sub);font-size:.68rem}
+.chat-as{margin-top:7px;font-size:.68rem;font-weight:700;color:var(--sub);background:var(--line-soft);
+  border-radius:999px;padding:3px 9px}
 .meet-chat-list .review-item{font-size:.8rem;padding:7px 10px}
 .meet-joinbtn{flex:1;border:1.5px solid var(--us);background:var(--us-bg);color:#0A6B3A;border-radius:10px;padding:8px;font:inherit;font-size:.8rem;font-weight:800;cursor:pointer}
 .meet-joinbtn.joined{background:var(--us);color:#fff}
@@ -107,6 +106,7 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .chat-item{display:flex;align-items:flex-end;gap:8px}
 .chat-item .ci-text{flex:1;min-width:0;word-break:break-word}
 .chat-item .ci-time{flex:0 0 auto;font-size:.64rem;color:var(--sub);white-space:nowrap}
+.chat-item.pending{opacity:.55}
 .meet-joinform .mj-name{flex:1;min-width:0;font:inherit;font-size:.83rem;padding:9px 11px;border-radius:10px;border:1.5px solid var(--us);outline:none;transition:border-color .15s,background .15s}
 .meet-joinform .mj-name.need{border-color:#C4402E;background:#FDF2F0;animation:shakeX .3s}
 @keyframes shakeX{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
@@ -1373,7 +1373,71 @@ function lockNameUI(){
     meetNameSaved.style.display='none';
   }
 }
-meetNameBtn.onclick=()=>{
+// 같은 이름으로 다른 기기에서 만든 모집·참여 기록을 이 기기로 이어받음
+// (폰에서 만든 모집을 PC에서도 수정·삭제할 수 있게)
+async function claimMyRecords(name){
+  if(!sb || !name) return 0;
+  let n=0;
+  try{
+    // 0) 이 이름으로 예전에 쓰던 기기 ID들을 장부에서 찾아 투표 기록까지 합침
+    //    (번개모임을 안 쓰고 투표만 한 사람도 기기 이동 시 이어지도록)
+    try{
+      const { data: ids } = await sb.from('identities').select('id,owner_id').eq('name', name);
+      const prevIds=(ids||[]).map(x=>x.owner_id).filter(x=>x && x!==VOTER_ID);
+      if(prevIds.length){
+        const { data: myVotes } = await sb.from('votes').select('shop').eq('voter', VOTER_ID);
+        const mine=new Set((myVotes||[]).map(v=>v.shop));
+        for(const oid of prevIds){
+          const { data: tv } = await sb.from('votes').select('id,shop').eq('voter', oid);
+          for(const v of (tv||[])){
+            if(mine.has(v.shop)) await sb.from('votes').update({ shop:'__merged__', vote:0 }).eq('id', v.id);
+            else { await sb.from('votes').update({ voter: VOTER_ID }).eq('id', v.id); mine.add(v.shop); n++; }
+          }
+        }
+      }
+      // 이 기기를 이 이름의 최신 기기로 등록(다음에 다른 기기에서 이어받을 수 있게)
+      const exists=(ids||[]).some(x=>x.owner_id===VOTER_ID);
+      if(!exists) await sb.from('identities').insert({ name, pin_hash:'-', owner_id: VOTER_ID });
+    }catch(e){}
+    const {from,to}=weekRangeKST();
+    // 1) 내 이름으로 된 모집글의 주최 권한 가져오기
+    const { data: mts } = await sb.from('meetups')
+      .select('id,host_id').eq('host_name', name).gte('meet_date', from).lte('meet_date', to);
+    for(const mt of (mts||[])){
+      if(mt.host_id!==VOTER_ID){
+        const { error } = await sb.from('meetups').update({ host_id: VOTER_ID }).eq('id', mt.id);
+        if(!error) n++;
+      }
+    }
+    // 2) 내 이름으로 참여한 기록도 이 기기로
+    const { data: js } = await sb.from('meetup_joins').select('id,user_id').eq('user_name', name);
+    const otherIds=new Set();
+    for(const j of (js||[])){
+      if(j.user_id!==VOTER_ID){
+        otherIds.add(j.user_id);
+        const { error } = await sb.from('meetup_joins').update({ user_id: VOTER_ID }).eq('id', j.id);
+        if(!error) n++;
+      }
+    }
+    // 3) 그 기기들에서 누른 투표도 이 기기 것으로 합침
+    //    (같은 사람이 폰·PC에서 각각 눌러 2표로 세어지던 문제 해결)
+    for(const oid of otherIds){
+      const { data: myVotes } = await sb.from('votes').select('shop').eq('voter', VOTER_ID);
+      const mine=new Set((myVotes||[]).map(v=>v.shop));
+      const { data: theirVotes } = await sb.from('votes').select('id,shop').eq('voter', oid);
+      for(const v of (theirVotes||[])){
+        if(mine.has(v.shop)){
+          // 이 기기에도 같은 가게 표가 있으면 중복이므로 예전 것을 무효 처리
+          await sb.from('votes').update({ shop:'__merged__', vote:0 }).eq('id', v.id);
+        }else{
+          await sb.from('votes').update({ voter: VOTER_ID }).eq('id', v.id);
+        }
+      }
+    }
+  }catch(e){}
+  return n;
+}
+meetNameBtn.onclick=async ()=>{
   if(meetNameInput.readOnly){ // 수정 모드로 전환
     meetNameInput.readOnly=false; meetNameInput.classList.remove('locked');
     meetNameBtn.textContent='저장';
@@ -1385,6 +1449,14 @@ meetNameBtn.onclick=()=>{
   if(!v){ meetNameInput.focus(); return; }
   setMyName(v);
   lockNameUI();
+  // 같은 이름의 기존 기록을 이 기기로 이어받고 목록을 새로 그림
+  claimMyRecords(v).then(n=>{
+    LS.set('earthmatjido_claimed', v);
+    if(n>0){
+      meetNameSaved.innerHTML=`✅ <b>${escapeHtml(v)}</b> 님으로 저장됐어요 · <b>기존 모집·참여 ${n}건</b>을 이 기기에서도 관리할 수 있어요`;
+      renderMeetList();
+    }
+  });
 };
 meetNameInput.addEventListener('keydown',e=>{ if(e.key==='Enter') meetNameBtn.click(); });
 document.getElementById('meetBtn').onclick=async function(){
@@ -1396,7 +1468,15 @@ document.getElementById('meetBtn').onclick=async function(){
   if(typeof refreshWhenUI==='function') refreshWhenUI();
   if(typeof clearPickedShop==='function') clearPickedShop();
   meetList.innerHTML='<div class="best-empty">불러오는 중...</div>';
+  // 목록을 먼저 보여주고(체감 속도), 기기 이어받기는 필요할 때만 뒤에서 처리
   await renderMeetList();
+  const savedName=getMyName();
+  if(savedName && LS.get('earthmatjido_claimed')!==savedName){
+    claimMyRecords(savedName).then(n=>{
+      LS.set('earthmatjido_claimed', savedName);
+      if(n>0) renderMeetList(); // 이어받은 게 있을 때만 다시 그림
+    });
+  }
 };
 function closeMeetModal(){
   meetBg.classList.remove('open');
@@ -1735,11 +1815,33 @@ async function renderMeetList(){
       // 맨 아래를 보고 있었을 때만 자동으로 최신 메시지까지 스크롤(위를 읽는 중이면 방해 안 함)
       if(atBottom || showLoading) chatList.scrollTop=chatList.scrollHeight;
     }
+    let chatChannel=null;
     function startChatPolling(){
       stopChatPolling();
-      chatTimer=setInterval(()=>{ loadChat(false); }, 4000); // 4초마다 새 메시지 확인
+      // 1순위: 실시간 구독(새 메시지가 오는 즉시 도착 - 지연 거의 없음)
+      if(sb && sb.channel){
+        try{
+          chatChannel = sb.channel('chat_'+chatKey)
+            .on('postgres_changes',
+                { event:'INSERT', schema:'public', table:'reviews', filter:'shop=eq.'+chatKey },
+                ()=>{ loadChat(false); })
+            .subscribe((status)=>{
+              // 구독이 안 되면(네트워크·설정 문제) 폴링으로 자동 전환
+              if(status==='CHANNEL_ERROR' || status==='TIMED_OUT') startFallbackPolling();
+            });
+        }catch(e){ startFallbackPolling(); }
+      }else startFallbackPolling();
+      // 2순위: 실시간이 놓친 게 있을 수 있으니 느슨하게 백업 확인(10초)
+      chatTimer=setInterval(()=>{ loadChat(false); }, 10000);
     }
-    function stopChatPolling(){ if(chatTimer){ clearInterval(chatTimer); chatTimer=null; } }
+    function startFallbackPolling(){
+      if(chatTimer) clearInterval(chatTimer);
+      chatTimer=setInterval(()=>{ loadChat(false); }, 2500); // 실시간이 안 되면 2.5초마다
+    }
+    function stopChatPolling(){
+      if(chatTimer){ clearInterval(chatTimer); chatTimer=null; }
+      if(chatChannel){ try{ sb.removeChannel(chatChannel); }catch(e){} chatChannel=null; }
+    }
     card.querySelector('.meet-chatbtn').onclick=async(ev)=>{
       const open = chatBox.style.display==='none';
       chatBox.style.display = open?'block':'none';
@@ -1755,9 +1857,11 @@ async function renderMeetList(){
     // 이 방에서 어떤 이름으로 쓰이는지 보여줌(방마다 이름이 고정되므로 헷갈리지 않게)
     const chatAs=card.querySelector('.chat-as');
     if(chatAs && myRoomName){
-      const why = isHost ? '이 모집을 올릴 때 쓴 이름' : (myJoin ? '이 모집에 참여할 때 쓴 이름' : '이 기기에 저장된 이름');
-      chatAs.innerHTML=`<b>${escapeHtml(myRoomName)}</b> 님으로 작성돼요 <span class="ca-why">(${why})</span>`;
-      chatAs.style.display='block';
+      chatAs.textContent=`✏️ ${myRoomName}`;
+      chatAs.style.display='inline-block';
+      // 입력을 시작하면 안내를 숨겨 대화에 방해되지 않게
+      chatInput.addEventListener('focus',()=>{ chatAs.style.display='none'; },{once:true});
+      chatInput.addEventListener('input',()=>{ chatAs.style.display='none'; },{once:true});
     }
     async function sendChat(){
       const text=chatInput.value.trim(); if(!text) return;
@@ -1770,10 +1874,22 @@ async function renderMeetList(){
       }
       const btn=card.querySelector('.meet-chat-send');
       btn.disabled=true;
+      // 내 메시지는 서버 응답을 기다리지 않고 화면에 먼저 띄운다(체감 속도)
+      chatInput.value='';
+      const tmp=document.createElement('div');
+      tmp.className='review-item chat-item pending';
+      const nowT=new Date();
+      tmp.innerHTML=`<span class="ci-text">${escapeHtml(nm+': '+text)}</span><span class="ci-time">${String(nowT.getHours()).padStart(2,'0')}:${String(nowT.getMinutes()).padStart(2,'0')}</span>`;
+      chatList.appendChild(tmp);
+      chatList.scrollTop=chatList.scrollHeight;
       const ok=await postReview(chatKey, `${nm}: ${text}`);
       btn.disabled=false;
-      if(ok){ chatInput.value=''; await loadChat(true); }
-      else alert('전송에 실패했어요.');
+      if(ok){ lastChatSig=''; await loadChat(false); }
+      else{
+        tmp.remove();
+        chatInput.value=text; // 실패하면 입력값 복구
+        alert('전송에 실패했어요.');
+      }
     }
     card.querySelector('.meet-chat-send').onclick=sendChat;
     chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat(); });
