@@ -315,7 +315,7 @@ h1 em{font-style:normal;color:var(--us)}
   animation:hintPulse 2s ease-in-out infinite}
 @keyframes hintPulse{0%,100%{opacity:1}50%{opacity:.78}}
 @media (min-width:760px){ .hdr-hint{display:none} }
-.scroll-hint{text-align:center;font-size:.72rem;font-weight:700;color:var(--ct);background:#EAF3FD;
+.scroll-hint{transition:opacity .2s;text-align:center;font-size:.72rem;font-weight:700;color:var(--ct);background:#EAF3FD;
   border-radius:999px;padding:6px 12px;margin:0 auto 10px;width:fit-content;animation:hintBounce 1.6s ease-in-out infinite}
 @keyframes hintBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
 @media (min-width:760px){ .scroll-hint{display:none} }
@@ -1387,9 +1387,7 @@ const meetTimeSelect=document.getElementById('meetTimeSelect');
     for(let m=0; m<60; m+=5){
       if(h===22 && m>0) break; // 22:00까지만
       const hh=String(h).padStart(2,'0'), mm=String(m).padStart(2,'0');
-      const ampm = h<12 ? '오전' : '오후';
-      const h12 = h%12===0 ? 12 : h%12;
-      html += `<option value="${hh}:${mm}">${ampm} ${h12}:${mm}</option>`;
+      html += `<option value="${hh}:${mm}">${hh}:${mm}</option>`;
     }
   }
   meetTimeSelect.innerHTML=html;
@@ -1482,8 +1480,7 @@ function timeOptionsHtml(selected){
       if(h===22 && m>0) break;
       const hh=String(h).padStart(2,'0'), mm=String(m).padStart(2,'0');
       const val=hh+':'+mm;
-      const ampm=h<12?'오전':'오후', h12=h%12===0?12:h%12;
-      html+=`<option value="${val}"${val===selected?' selected':''}>${ampm} ${h12}:${mm}</option>`;
+      html+=`<option value="${val}"${val===selected?' selected':''}>${val}</option>`;
     }
   }
   return html;
@@ -2197,9 +2194,9 @@ function openPanel(p){
   // 한 번이라도 스크롤하면 안내를 숨김(이미 아는 사람에겐 방해되지 않게)
   const hintEl=panel.querySelector('#scrollHint');
   if(hintEl){
-    if(LS.get('earthmatjido_scrolled')) hintEl.style.display='none';
+    // 카드를 내리는 동안만 잠깐 흐려짐(영구히 숨기지 않음)
     panel.addEventListener('scroll',()=>{
-      if(panel.scrollTop>30){ hintEl.style.display='none'; LS.set('earthmatjido_scrolled','1'); }
+      hintEl.style.opacity = panel.scrollTop>30 ? '0' : '1';
     },{passive:true});
   }
   panel.style.height=''; panel.style.maxHeight=''; panel.style.transition=''; // 새 가게 열 때마다 기본(40vh)부터 시작
@@ -2210,19 +2207,17 @@ function openPanel(p){
       map.relayout();
       // 카드가 화면 아래를 덮으므로, 경로가 지도 "위쪽"에 오도록 아래 여백을 크게 준다
       if(isDesktop()){ map.setBounds(bounds, 60, 60, 60, 60); return; }
-      // 모바일: 먼저 경로 전체가 보이도록 맞춘 뒤,
-      // 카드에 가리지 않게 지도 중심을 위로 올린다(여백만 주면 지도가 과하게 축소됨)
-      map.setBounds(bounds, 40, 30, 40, 30);
+      // 모바일: 카드가 지도 아래쪽을 덮으므로
+      // ① 아래 여백을 카드 높이만큼 줘서 경로를 위쪽 영역에 배치하고
+      // ② 한 단계 축소해 사옥~가게가 넉넉히 한눈에 들어오게 한다
+      const mapH = document.getElementById('map').getBoundingClientRect().height || window.innerHeight;
+      const cardH = panel.getBoundingClientRect().height || mapH*0.40;
+      map.setBounds(bounds, 44, 34, Math.round(cardH+24), 34);
       setTimeout(()=>{
-        const mapEl=document.getElementById('map');
-        const mapH=mapEl.getBoundingClientRect().height||window.innerHeight;
-        const cardH=panel.getBoundingClientRect().height||mapH*0.40;
-        // 가려지는 높이의 절반만큼 지도를 위로 이동 → 경로가 보이는 영역 가운데로 옴
-        const shiftPx=Math.round(cardH/2);
-        const proj=map.getProjection();
-        const c=proj.pointFromCoords(map.getCenter());
-        map.setCenter(proj.coordsFromPoint(new kakao.maps.Point(c.x, c.y - shiftPx)));
-      },60);
+        // setBounds가 너무 확대해 경로 끝이 빠듯하면 한 단계 넓게 보여준다
+        const lv=map.getLevel();
+        if(lv<=3) map.setLevel(lv+1, {animate:false});
+      },80);
     },80);
   });
 }
@@ -2293,11 +2288,15 @@ function naverPlace(p){window.open(`https://map.naver.com/p/search/${encodeURICo
 // 헤더를 한 번이라도 내려보면 안내를 숨김
 (function(){
   const hdr=document.querySelector('header'), hint=document.getElementById('hdrHint');
-  if(hint&&hdr) hint.onclick=()=>{ hdr.scrollTo({top:hdr.scrollHeight, behavior:'smooth'}); };
+  if(hint&&hdr) hint.onclick=()=>{
+    const atEnd = hdr.scrollTop + hdr.clientHeight >= hdr.scrollHeight - 8;
+    hdr.scrollTo({top: atEnd ? 0 : hdr.scrollHeight, behavior:'smooth'});
+  };
   if(!hdr||!hint) return;
-  if(LS.get('earthmatjido_hdr_scrolled')) hint.style.display='none';
+  // 헤더를 끝까지 내렸을 때만 화살표를 위쪽 방향으로 바꿔줌(숨기지는 않음 - 항상 보여야 함)
   hdr.addEventListener('scroll',()=>{
-    if(hdr.scrollTop>20){ hint.style.display='none'; LS.set('earthmatjido_hdr_scrolled','1'); }
+    const atEnd = hdr.scrollTop + hdr.clientHeight >= hdr.scrollHeight - 8;
+    hint.textContent = atEnd ? '↑ 위로 올리면 검색 · 룰렛' : '↓ 더 있어요 · 🏆BEST · 📮제보 · 🔥번개모임';
   },{passive:true});
 })();
 document.getElementById('hdrToggle').onclick=function(){
