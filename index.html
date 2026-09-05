@@ -1395,11 +1395,26 @@ async function claimMyRecords(name){
           }
         }
       }
-      // 이 기기를 이 이름의 최신 기기로 등록(다음에 다른 기기에서 이어받을 수 있게)
+      // 이 기기는 "지금 쓰는 이름" 하나만 갖도록 정리
+      // (이름을 바꿨는데 예전 이름 기록까지 딸려오던 문제 방지)
+      await sb.from('identities').delete().eq('owner_id', VOTER_ID).neq('name', name);
       const exists=(ids||[]).some(x=>x.owner_id===VOTER_ID);
       if(!exists) await sb.from('identities').insert({ name, pin_hash:'-', owner_id: VOTER_ID });
     }catch(e){}
     const {from,to}=weekRangeKST();
+    // 0-2) 이름을 바꿨다면, 예전 이름으로 만든 모집·참여의 소유권은 내려놓는다
+    //      (김설현으로 바꿨는데 허교범이 만든 모집이 계속 "내 모집"으로 보이던 문제)
+    try{
+      const { data: oldMts } = await sb.from('meetups')
+        .select('id,host_name').eq('host_id', VOTER_ID).gte('meet_date', from).lte('meet_date', to);
+      for(const mt of (oldMts||[])){
+        if(mt.host_name!==name) await sb.from('meetups').update({ host_id:'released_'+VOTER_ID }).eq('id', mt.id);
+      }
+      const { data: oldJoins } = await sb.from('meetup_joins').select('id,user_name').eq('user_id', VOTER_ID);
+      for(const j of (oldJoins||[])){
+        if(j.user_name!==name) await sb.from('meetup_joins').update({ user_id:'released_'+VOTER_ID }).eq('id', j.id);
+      }
+    }catch(e){}
     // 1) 내 이름으로 된 모집글의 주최 권한 가져오기
     const { data: mts } = await sb.from('meetups')
       .select('id,host_id').eq('host_name', name).gte('meet_date', from).lte('meet_date', to);
