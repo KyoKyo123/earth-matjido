@@ -82,6 +82,15 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .meet-card.full{opacity:.82}
 .full-tag{margin-left:7px;font-size:.66rem;font-weight:800;background:#C4402E;color:#fff;border-radius:999px;padding:2px 8px;vertical-align:middle}
 .meet-joinform{display:flex;gap:6px;margin-top:9px}
+.host-badge{flex:1;display:flex;align-items:center;justify-content:center;background:var(--line-soft);color:var(--sub);
+  border-radius:10px;padding:9px;font-size:.78rem;font-weight:700}
+.chat-name-row{display:flex;align-items:center;gap:7px;margin-top:8px}
+.chat-name-row .cn-label{font-size:.72rem;font-weight:700;color:var(--sub);flex:0 0 auto}
+.chat-name-row .meet-chat-name{flex:1;min-width:0;font:inherit;font-size:.8rem;padding:7px 10px;border-radius:9px;border:1.5px solid var(--line);outline:none}
+.chat-name-row .meet-chat-name:focus{border-color:var(--reg)}
+.chat-item{display:flex;align-items:flex-end;gap:8px}
+.chat-item .ci-text{flex:1;min-width:0;word-break:break-word}
+.chat-item .ci-time{flex:0 0 auto;font-size:.64rem;color:var(--sub);white-space:nowrap}
 .meet-joinform .mj-name{flex:1;min-width:0;font:inherit;font-size:.83rem;padding:9px 11px;border-radius:10px;border:1.5px solid var(--us);outline:none}
 .meet-joinform .mj-ok{border:none;background:var(--us);color:#fff;font:inherit;font-weight:800;font-size:.8rem;padding:0 15px;border-radius:10px;cursor:pointer}
 .meet-joinform .mj-cancel{border:1.5px solid var(--line);background:var(--surface);color:var(--sub);font:inherit;font-weight:700;font-size:.78rem;padding:0 12px;border-radius:10px;cursor:pointer}
@@ -597,7 +606,8 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
     </div>
     <div class="name-warn">
       🙋 <b>본인 이름이나 별명으로 참여해주세요!</b><br>
-      🙏 다른 분 이름으로는 적지 말아주세요
+      🙏 다른 분 이름으로는 적지 말아주세요<br>
+      ⏰ 약속은 <b>시간이 1시간 지나면</b> 목록에서 저절로 사라져요
     </div>
     <div class="tip-form">
       <label>어디서 먹을까요? *</label>
@@ -1433,13 +1443,19 @@ async function renderMeetList(){
         <button class="mj-cancel">취소</button>
       </div>
       <div class="meet-actions">
-        <button class="meet-joinbtn${iJoined?' joined':''}" ${isFull?'disabled':''}>${iJoined?'✓ 참여 중 (취소)':(isFull?'모집 완료':'+ 나도 갈래요')}</button>
+        ${isHost
+          ? '<span class="host-badge">내가 만든 모집이에요</span>'
+          : `<button class="meet-joinbtn${iJoined?' joined':''}" ${isFull?'disabled':''}>${iJoined?'✓ 참여 중 (취소)':(isFull?'모집 완료':'+ 나도 갈래요')}</button>`}
         <button class="meet-chatbtn">💬 대화</button>
         ${isHost?'<button class="meet-editbtn" title="내 모집 수정">✏️</button><button class="meet-delbtn" title="내 모집 삭제">🗑️</button>':''}
       </div>
       <div class="meet-chat" style="display:none">
         <div class="meet-chat-list"></div>
-        <div class="review-input-row" style="margin-top:8px;margin-bottom:0">
+        <div class="chat-name-row">
+          <span class="cn-label">이름</span>
+          <input type="text" class="meet-chat-name" placeholder="이름 또는 별명" maxlength="20">
+        </div>
+        <div class="review-input-row" style="margin-top:6px;margin-bottom:0">
           <input type="text" class="meet-chat-input" placeholder="예: 12시 5분에 로비로 갈게요" maxlength="200">
           <button class="meet-chat-send">보내기</button>
         </div>
@@ -1456,7 +1472,8 @@ async function renderMeetList(){
     card.querySelector('.mj-ok').onclick=()=>doJoin(mjName.value.trim());
     mjName.addEventListener('keydown',e=>{ if(e.key==='Enter') doJoin(mjName.value.trim()); });
     card.querySelector('.mj-cancel').onclick=()=>{ joinForm.style.display='none'; };
-    card.querySelector('.meet-joinbtn').onclick=async(ev)=>{
+    const joinBtn=card.querySelector('.meet-joinbtn');
+    if(joinBtn) joinBtn.onclick=async(ev)=>{
       const b=ev.currentTarget;
       if(iJoined){
         b.disabled=true;
@@ -1528,8 +1545,10 @@ async function renderMeetList(){
       const atBottom = chatList.scrollHeight - chatList.scrollTop - chatList.clientHeight < 30;
       chatList.innerHTML='';
       items.slice().reverse().forEach(it=>{
-        const el=document.createElement('div'); el.className='review-item';
-        el.innerHTML=escapeHtml(it.comment);
+        const el=document.createElement('div'); el.className='review-item chat-item';
+        const d=new Date(it.created_at);
+        const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0');
+        el.innerHTML=`<span class="ci-text">${escapeHtml(it.comment)}</span><span class="ci-time">${hh}:${mm}</span>`;
         chatList.appendChild(el);
       });
       // 맨 아래를 보고 있었을 때만 자동으로 최신 메시지까지 스크롤(위를 읽는 중이면 방해 안 함)
@@ -1548,14 +1567,14 @@ async function renderMeetList(){
       else stopChatPolling(); // 창을 닫으면 즉시 중단(불필요한 통신 방지)
     };
     card._stopChat = stopChatPolling; // 목록이 다시 그려질 때 정리하기 위해 보관
+    const chatName=card.querySelector('.meet-chat-name');
+    chatName.value=getMyName();
+    chatName.addEventListener('input',()=>{ const v=chatName.value.trim(); if(v) setMyName(v); });
     async function sendChat(){
       const text=chatInput.value.trim(); if(!text) return;
-      let nm=getMyName();
-      if(!nm){
-        alert('먼저 위쪽 "내 이름" 칸에 이름을 입력해주세요.');
-        meetNameInput.focus(); meetNameInput.scrollIntoView({block:'center',behavior:'smooth'});
-        return;
-      }
+      const nm=chatName.value.trim();
+      if(!nm){ chatName.focus(); return; }
+      setMyName(nm);
       const btn=card.querySelector('.meet-chat-send');
       btn.disabled=true;
       const ok=await postReview(chatKey, `${nm}: ${text}`);
