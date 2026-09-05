@@ -77,6 +77,10 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .meet-chip.me{background:var(--ink);color:#fff;font-weight:800}
 .meet-chip.total{background:var(--line-soft);color:var(--sub)}
 .meet-actions{display:flex;gap:6px;margin-top:10px}
+.meet-menubtn{width:100%;margin-top:9px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
+  border-radius:10px;padding:9px;font:inherit;font-size:.79rem;font-weight:700;cursor:pointer;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meet-menubtn:active{background:var(--line-soft)}
 .meet-chatbtn{flex:0 0 auto;border:1.5px solid var(--line);background:var(--surface);color:var(--sub-deep);
   border-radius:10px;padding:9px 12px;font:inherit;font-size:.78rem;font-weight:700;cursor:pointer}
 .meet-chatbtn:active{background:var(--line-soft)}
@@ -626,7 +630,7 @@ footer{padding:6px 14px calc(6px + env(safe-area-inset-bottom));font-size:.64rem
       <div class="shop-picked" id="meetShopPicked" style="display:none"></div>
       <label>언제 만날까요? *</label>
       <div class="datetime-row">
-        <input type="datetime-local" id="meetTimeInput">
+        <input type="datetime-local" id="meetTimeInput" step="300">
         <button type="button" class="dt-confirm" id="meetTimeConfirm">확인</button>
       </div>
       <div class="when-preview" id="meetWhenPreview" style="display:none"></div>
@@ -1440,6 +1444,14 @@ document.getElementById('meetSubmit').onclick=async()=>{
     await updateMeetBadge();
   } else alert('등록에 실패했어요. 다시 시도해주세요.');
 };
+function round5(t){
+  // 5분 단위 입력칸이 기존 값(예: 00:44)을 거부하지 않도록 가까운 5분으로 맞춰줌
+  const m=String(t||'12:00').match(/(\d{1,2}):(\d{2})/);
+  if(!m) return '12:00';
+  let h=parseInt(m[1]), mi=Math.round(parseInt(m[2])/5)*5;
+  if(mi>=60){ mi=0; h=(h+1)%24; }
+  return String(h).padStart(2,'0')+':'+String(mi).padStart(2,'0');
+}
 function fmtMeetWhen(dateStr, timeStr){
   // "오늘 12:30" / "내일 12:30" / "목 12:30" 형태로 짧게 표시
   const t=escapeHtml(timeStr||'');
@@ -1468,6 +1480,7 @@ async function renderMeetList(){
     const total=joins.length+1;               // 주최자 포함 현재 인원
     const cap=m.capacity||0;                  // 0이면 제한 없음
     const isFull = cap>0 && total>=cap && !iJoined && !isHost;
+    const mapShop = findMapShop(m.shop); // 지도에 있는 가게면 메뉴 보기 버튼을 띄움
     const card=document.createElement('div');
     card.className='meet-card'+(isHost?' mine':'')+(isFull?' full':'');
     card.innerHTML=`
@@ -1487,6 +1500,7 @@ async function renderMeetList(){
         <button class="mj-ok">참여</button>
         <button class="mj-cancel">취소</button>
       </div>
+      ${mapShop?`<button class="meet-menubtn">📷 ${escapeHtml(mapShop.n)} 메뉴·가격 보기</button>`:''}
       <div class="meet-actions">
         ${isHost
           ? '<span class="host-badge">내가 만든 모집이에요</span>'
@@ -1501,6 +1515,10 @@ async function renderMeetList(){
           <button class="meet-chat-send">보내기</button>
         </div>
       </div>`;
+    const menuBtn=card.querySelector('.meet-menubtn');
+    if(menuBtn) menuBtn.onclick=()=>{
+      window.open(mapShop.kakaoUrl||`https://map.kakao.com/?q=${encodeURIComponent(mapShop.n)}`,'_blank','noopener');
+    };
     const joinForm=card.querySelector('.meet-joinform');
     const mjName=card.querySelector('.mj-name');
     async function doJoin(nm){
@@ -1544,7 +1562,7 @@ async function renderMeetList(){
         <label>어디서 먹을까요?</label>
         <input type="text" class="ef-shop" maxlength="60" value="${escapeHtml(m.shop)}">
         <label>언제 만날까요?</label>
-        <input type="datetime-local" class="ef-time" value="${m.meet_date}T${(m.meet_at||'12:00').slice(0,5)}">
+        <input type="datetime-local" class="ef-time" step="300" value="${m.meet_date}T${round5(m.meet_at)}">
         <label>어디서 모일까요?</label>
         <input type="text" class="ef-place" maxlength="60" value="${escapeHtml(m.place||'')}">
         <label>한마디</label>
