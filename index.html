@@ -42,6 +42,12 @@ header{padding:calc(11px + env(safe-area-inset-top)) 14px 8px;background:var(--p
   header.collapsed{max-height:none;padding:11px 14px 8px} /* 데스크톱에선 "접기" 개념 자체가 없음 - 항상 펼쳐짐 */
 }
 header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;overflow:hidden}
+.recenter-btn{position:absolute;right:10px;bottom:14px;z-index:14;width:42px;height:42px;border-radius:50%;
+  border:1.5px solid var(--line);background:var(--surface);font-size:1.1rem;cursor:pointer;
+  box-shadow:0 3px 10px rgba(0,0,0,.2)}
+.recenter-btn:active{background:var(--line-soft)}
+.map-back-hint{position:absolute;left:50%;bottom:70px;transform:translateX(-50%);z-index:15;display:none;
+  background:rgba(33,28,21,.88);color:#fff;font-size:.76rem;font-weight:700;padding:8px 14px;border-radius:999px;white-space:nowrap}
 .hdrtoggle{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:16;
   border:none;border-radius:0 0 14px 14px;background:var(--ink);color:#fff;
   padding:6px 18px 8px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25);
@@ -580,6 +586,8 @@ footer{padding:6px 14px calc(6px + env(safe-area-inset-bottom));font-size:.64rem
   <div id="map">
     <div class="count" id="count"></div>
     <button class="hdrtoggle" id="hdrToggle" title="검색·룰렛 배너 접기/펼치기"><span class="htxt">검색·룰렛 접기</span><span class="harrow">▲</span></button>
+    <button class="recenter-btn" id="recenterBtn" title="회사 위치로 돌아가기">🏢</button>
+    <div class="map-back-hint" id="mapBackHint">회사 근처로 돌아왔어요</div>
     <div class="loaderr" id="loaderr"></div>
   </div>
 </div>
@@ -920,6 +928,15 @@ async function fetchMeetups(){
       end.setUTCHours(parseInt(hm[1]), parseInt(hm[2]), 0, 0);
       end.setUTCHours(end.getUTCHours()+1); // 약속시간 +1시간까지 노출
       return nowKST <= end;
+    }).sort((a,b)=>{
+      // 화면에서도 한 번 더 시간순 정렬(빠른 약속이 위로)
+      // 시:분을 숫자로 바꿔 비교해야 "9:00"처럼 한 자리여도 순서가 안 꼬임
+      const key = m => {
+        const hm = String(m.meet_at||'').match(/(\d{1,2}):(\d{2})/);
+        const mins = hm ? parseInt(hm[1])*60 + parseInt(hm[2]) : 0;
+        return (m.meet_date||'') + '|' + String(mins).padStart(4,'0');
+      };
+      return key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0;
     });
   }catch(e){ return []; }
 }
@@ -1060,6 +1077,28 @@ function initKakao(){
   kakao.maps.load(()=>{ buildMap(); });
 }
 let officeOverlay=null, officeRings=[];
+document.getElementById('recenterBtn').onclick=()=>{
+  if(!map) return;
+  map.setLevel(4);
+  map.setCenter(new kakao.maps.LatLng(OFFICE.lat,OFFICE.lng));
+};
+let __guardTimer=null;
+function guardMapBounds(){
+  if(!map) return;
+  clearTimeout(__guardTimer);
+  __guardTimer=setTimeout(()=>{
+    try{
+      const c=map.getCenter();
+      const dist=hav(OFFICE,{lat:c.getLat(),lng:c.getLng()});
+      if(dist>4000){
+        map.setLevel(5);
+        map.setCenter(new kakao.maps.LatLng(OFFICE.lat,OFFICE.lng));
+        const el=document.getElementById('mapBackHint');
+        if(el){ el.style.display='block'; setTimeout(()=>{el.style.display='none';},2200); }
+      }
+    }catch(e){}
+  },300);
+}
 function drawOfficeMarkers(){
   // 사옥 전환 시 회사 마커와 반경 링을 새 좌표로 다시 그림
   if(officeOverlay) officeOverlay.setMap(null);
@@ -1839,6 +1878,10 @@ function buildMap(){
   map=new kakao.maps.Map(document.getElementById('map'),{
     center:new kakao.maps.LatLng(OFFICE.lat,OFFICE.lng), level:4 });
   map.setMaxLevel(7);
+  // 지도가 회사에서 너무 멀어지면(4km 밖) 자동으로 되돌아옴
+  // - 조작 실수나 예기치 못한 이동으로 엉뚱한 곳에 갇히는 것을 방지
+  kakao.maps.event.addListener(map,'dragend',guardMapBounds);
+  kakao.maps.event.addListener(map,'zoom_changed',guardMapBounds);
   drawOfficeMarkers();
   buildMarkers(); buildChips(); buildOfficeTabs(); applyFilter();
   setTimeout(()=>{ if(typeof updateMeetBadge==='function') updateMeetBadge(); }, 800); // 오늘 번개 건수 뱃지
@@ -2328,7 +2371,19 @@ document.getElementById('hdrToggle').onclick=function(){
 };
 const qi=document.getElementById('q'),qc=document.getElementById('qclr');
 qi.addEventListener('input',()=>{q=qi.value.trim().toLowerCase();qc.classList.toggle('on',!!q);closePanel();applyFilter();
-  const pts=P.filter(matchCat); if(q&&pts.length){const b=new kakao.maps.LatLngBounds();pts.forEach(p=>b.extend(new kakao.maps.LatLng(p.lat,p.lng)));map.setBounds(b);}});
+  const pts=P.filter(matchCat);
+  if(q && pts.length){
+    if(pts.length===1){
+      // 한 곳만 검색되면 setBounds는 범위가 0이라 지도가 튐 → 중심 이동으로 처리
+      map.setCenter(new kakao.maps.LatLng(pts[0].lat, pts[0].lng));
+      if(map.getLevel()>4) map.setLevel(4);
+    }else{
+      const b=new kakao.maps.LatLngBounds();
+      pts.forEach(p=>b.extend(new kakao.maps.LatLng(p.lat,p.lng)));
+      map.setBounds(b);
+    }
+  }
+});
 qc.onclick=()=>{qi.value="";q="";qc.classList.remove('on');applyFilter();qi.focus();};
 
 
