@@ -630,6 +630,8 @@ footer{padding:6px 14px calc(6px + env(safe-area-inset-bottom));font-size:.64rem
     <div class="name-warn">
       🙋 <b>본인 이름이나 별명으로 참여해주세요!</b><br>
       🙏 다른 분 이름으로는 적지 말아주세요<br>
+      💬 <b>대화는 정원이 차도 누구나</b> 할 수 있어요 (구경하다 합류 환영!)<br>
+      📱 다른 기기(폰↔PC)에서도 <b>같은 이름</b>으로 하면 이어서 참여돼요<br>
       ⏰ 약속은 <b>시간이 1시간 지나면</b> 목록에서 저절로 사라져요
     </div>
     <div class="tip-form">
@@ -943,6 +945,17 @@ async function joinMeetup(meetupId, name){
   const nm=(name||'').trim().slice(0,20);
   if(!nm) return null;
   try{
+    // 주최자와 같은 이름이면 이미 명단에 포함된 사람이므로 추가하지 않음
+    // (PC에서 모집을 올리고 폰에서 참여를 누르면 2명으로 잘못 세지던 문제 방지)
+    const { data: mt } = await sb.from('meetups')
+      .select('host_name,host_id').eq('id', meetupId).maybeSingle();
+    if(mt && mt.host_name===nm){
+      if(mt.host_id!==VOTER_ID){
+        // 주최자 본인이 다른 기기로 들어온 경우 → 주최 권한을 이 기기로 넘김
+        await sb.from('meetups').update({ host_id: VOTER_ID }).eq('id', meetupId);
+      }
+      return true; // 인원수는 늘지 않음
+    }
     // 같은 이름이 이미 명단에 있으면 새로 추가하지 않고 그 기록을 이 기기로 넘겨받음
     // (PC에서 참여했다가 폰으로 들어와도 중복으로 안 쌓이고 "참여 중"으로 인식됨)
     const { data: exist } = await sb.from('meetup_joins')
@@ -2200,7 +2213,9 @@ function openPanel(p){
     },{passive:true});
   }
   panel.style.height=''; panel.style.maxHeight=''; panel.style.transition=''; // 새 가게 열 때마다 기본(40vh)부터 시작
+  panel.scrollTop=0; // 다른 가게를 열면 항상 카드 맨 위부터 보이게
   panel.classList.add('open');
+  requestAnimationFrame(()=>{ panel.scrollTop=0; });
   requestAnimationFrame(()=>{
     setTimeout(()=>{
       if(!map) return;
