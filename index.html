@@ -309,6 +309,14 @@ h1 em{font-style:normal;color:var(--us)}
 }
 
 .grab{width:36px;height:4px;border-radius:4px;background:#E1D6BE;margin:10px auto}
+.hdr-hint{text-align:center;font-size:.72rem;font-weight:700;color:var(--ct);background:#EAF3FD;
+  border-radius:999px;padding:6px 12px;margin:0 auto 8px;width:fit-content;max-width:100%;
+  animation:hintBounce 1.6s ease-in-out infinite}
+@media (min-width:760px){ .hdr-hint{display:none} }
+.scroll-hint{text-align:center;font-size:.72rem;font-weight:700;color:var(--ct);background:#EAF3FD;
+  border-radius:999px;padding:6px 12px;margin:0 auto 10px;width:fit-content;animation:hintBounce 1.6s ease-in-out infinite}
+@keyframes hintBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
+@media (min-width:760px){ .scroll-hint{display:none} }
 .panel-close{display:none}
 @media (min-width:760px){
   .grab{display:none}
@@ -542,6 +550,7 @@ footer{padding:6px 14px calc(6px + env(safe-area-inset-bottom));font-size:.64rem
     <button class="rb-custom" id="diceOpen">🎯 직접 골라서 돌리기<span class="rbc-sub"></span></button>
   </div>
   <div class="headrow">
+    <div class="hdr-hint" id="hdrHint">↓ 아래로 내리면 🏆BEST순위 · 📮제보 · 🔥번개모임도 있어요</div>
     <div class="searchbar"><span class="ico">🔍</span><input id="q" type="search" placeholder="가게·메뉴·후기 검색" autocomplete="off"><button class="clr" id="qclr">✕</button></div>
   </div>
   <div class="chipwrap">
@@ -1626,18 +1635,19 @@ async function renderMeetList(){
       else stopChatPolling(); // 창을 닫으면 즉시 중단(불필요한 통신 방지)
     };
     card._stopChat = stopChatPolling; // 목록이 다시 그려질 때 정리하기 위해 보관
-    // 이 방에서 쓰는 내 이름은 고정: 주최자면 모집할 때 쓴 이름, 참가자면 참여할 때 쓴 이름
+    // 이 방에서 쓸 내 이름: 주최자면 모집 때 쓴 이름, 참가자면 참여 때 쓴 이름,
+    // 둘 다 아니면(예: PC에서 참여했다가 폰으로 접속) 이 기기에 저장된 이름을 사용
     const myJoin = joins.find(j=>j.user_id===VOTER_ID);
-    const myRoomName = isHost ? m.host_name : (myJoin ? myJoin.user_name : '');
-    if(!myRoomName){
-      chatInput.disabled=true;
-      chatInput.placeholder='참여하면 대화할 수 있어요';
-      card.querySelector('.meet-chat-send').disabled=true;
-    }
+    const myRoomName = isHost ? m.host_name : (myJoin ? myJoin.user_name : getMyName());
     async function sendChat(){
       const text=chatInput.value.trim(); if(!text) return;
-      const nm=myRoomName;
-      if(!nm) return;
+      let nm=myRoomName;
+      if(!nm){
+        // 다른 기기라 이름을 모르는 경우: 그 자리에서 한 번만 물어봄
+        nm=(prompt('대화에 쓸 이름을 알려주세요\n(다른 기기에서 참여하셨다면 그때 쓴 이름을 적어주세요)')||'').trim();
+        if(!nm) return;
+        setMyName(nm);
+      }
       const btn=card.querySelector('.meet-chat-send');
       btn.disabled=true;
       const ok=await postReview(chatKey, `${nm}: ${text}`);
@@ -2068,6 +2078,7 @@ function openPanel(p){
     <div class="panel-close"><span>${p.n}</span><button onclick="closePanel()">✕</button></div>
     <div class="sheet-inner">
     <div class="grab"></div>
+    <div class="scroll-hint" id="scrollHint">↓ 아래로 밀면 길찾기 · 한줄평 · 후기가 더 있어요</div>
     <div class="s-head">
       ${isDesktop()?'':`<span class="s-name">${p.n}</span>`}
       ${p.us?'<span class="tag t-us">어스인증</span>':''}<span class="tag t-cat">${p.cat}</span>
@@ -2145,6 +2156,14 @@ function openPanel(p){
   panel.querySelector('#cardReviewInput').addEventListener('keydown',e=>{
     if(e.key==='Enter') panel.querySelector('#cardReviewSubmit').click();
   });
+  // 한 번이라도 스크롤하면 안내를 숨김(이미 아는 사람에겐 방해되지 않게)
+  const hintEl=panel.querySelector('#scrollHint');
+  if(hintEl){
+    if(LS.get('earthmatjido_scrolled')) hintEl.style.display='none';
+    panel.addEventListener('scroll',()=>{
+      if(panel.scrollTop>30){ hintEl.style.display='none'; LS.set('earthmatjido_scrolled','1'); }
+    },{passive:true});
+  }
   panel.style.height=''; panel.style.maxHeight=''; panel.style.transition=''; // 새 가게 열 때마다 기본(46vh)부터 시작
   panel.classList.add('open');
   requestAnimationFrame(()=>{
@@ -2153,7 +2172,12 @@ function openPanel(p){
       map.relayout();
       // 카드가 화면 아래를 덮으므로, 경로가 지도 "위쪽"에 오도록 아래 여백을 크게 준다
       if(isDesktop()) map.setBounds(bounds, 60, 60, 60, 60);
-      else map.setBounds(bounds, 70, 40, Math.round(window.innerHeight*0.10), 40);
+      else {
+        // 카드가 화면 아래 절반가량을 덮으므로, 그 높이만큼 아래 여백을 크게 줘야
+        // 경로 전체가 지도 위쪽에 잘리지 않고 들어온다
+        const cardH = panel.getBoundingClientRect().height || window.innerHeight*0.46;
+        map.setBounds(bounds, 60, 40, Math.round(cardH*0.55), 40);
+      }
     },80);
   });
 }
@@ -2221,6 +2245,15 @@ function kakaoRoute(p){
 function naverPlace(p){window.open(`https://map.naver.com/p/search/${encodeURIComponent(p.n+' 합정')}`,'_blank','noopener');}
 
 /* ── 검색 ── */
+// 헤더를 한 번이라도 내려보면 안내를 숨김
+(function(){
+  const hdr=document.querySelector('header'), hint=document.getElementById('hdrHint');
+  if(!hdr||!hint) return;
+  if(LS.get('earthmatjido_hdr_scrolled')) hint.style.display='none';
+  hdr.addEventListener('scroll',()=>{
+    if(hdr.scrollTop>20){ hint.style.display='none'; LS.set('earthmatjido_hdr_scrolled','1'); }
+  },{passive:true});
+})();
 document.getElementById('hdrToggle').onclick=function(){
   const hdr=document.querySelector('header');
   const collapsed=hdr.classList.toggle('collapsed');
