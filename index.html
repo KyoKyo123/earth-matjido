@@ -309,9 +309,11 @@ h1 em{font-style:normal;color:var(--us)}
 }
 
 .grab{width:36px;height:4px;border-radius:4px;background:#E1D6BE;margin:10px auto}
-.hdr-hint{text-align:center;font-size:.72rem;font-weight:700;color:var(--ct);background:#EAF3FD;
-  border-radius:999px;padding:6px 12px;margin:0 auto 8px;width:fit-content;max-width:100%;
-  animation:hintBounce 1.6s ease-in-out infinite}
+.hdr-hint{flex:0 0 auto;text-align:center;font-size:.74rem;font-weight:800;color:#fff;
+  background:linear-gradient(180deg,var(--ct),#1565C0);padding:7px 12px;z-index:19;
+  box-shadow:0 2px 6px rgba(0,0,0,.18);cursor:pointer;
+  animation:hintPulse 2s ease-in-out infinite}
+@keyframes hintPulse{0%,100%{opacity:1}50%{opacity:.78}}
 @media (min-width:760px){ .hdr-hint{display:none} }
 .scroll-hint{text-align:center;font-size:.72rem;font-weight:700;color:var(--ct);background:#EAF3FD;
   border-radius:999px;padding:6px 12px;margin:0 auto 10px;width:fit-content;animation:hintBounce 1.6s ease-in-out infinite}
@@ -331,7 +333,7 @@ h1 em{font-style:normal;color:var(--us)}
 @media (max-width:759px){
   #panel{position:absolute;left:0;right:0;bottom:0;top:auto;width:auto;flex:none;
     border-right:none;border-radius:var(--r-lg) var(--r-lg) 0 0;box-shadow:0 -10px 32px rgba(33,28,21,.2);
-    height:46vh;max-height:46vh;overflow-y:auto;display:none;transition:height .25s ease,max-height .25s ease}
+    height:40vh;max-height:40vh;overflow-y:auto;display:none;transition:height .25s ease,max-height .25s ease}
   #panel.open{display:block;animation:up .2s ease}
 }
 @keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
@@ -550,7 +552,6 @@ footer{padding:6px 14px calc(6px + env(safe-area-inset-bottom));font-size:.64rem
     <button class="rb-custom" id="diceOpen">🎯 직접 골라서 돌리기<span class="rbc-sub"></span></button>
   </div>
   <div class="headrow">
-    <div class="hdr-hint" id="hdrHint">↓ 아래로 내리면 🏆BEST순위 · 📮제보 · 🔥번개모임도 있어요</div>
     <div class="searchbar"><span class="ico">🔍</span><input id="q" type="search" placeholder="가게·메뉴·후기 검색" autocomplete="off"><button class="clr" id="qclr">✕</button></div>
   </div>
   <div class="chipwrap">
@@ -573,6 +574,7 @@ footer{padding:6px 14px calc(6px + env(safe-area-inset-bottom));font-size:.64rem
   <button class="meetbtn" id="meetBtn">🔥 같이 여기 먹을 사람? <span id="meetCount"></span></button>
   <footer>구글맵 평점·좌표 2026-07 / US후기=사내 노션. 지도·로드뷰=카카오. 웨이팅은 당일 앱 확인 필수.</footer>
 </header>
+<div class="hdr-hint" id="hdrHint">↓ 더 있어요 · 🏆BEST · 📮제보 · 🔥번개모임</div>
 <div id="body">
   <div id="panel"></div>
   <div id="map">
@@ -1379,9 +1381,11 @@ const meetDateInput=document.getElementById('meetDateInput');
 const meetTimeSelect=document.getElementById('meetTimeSelect');
 // 시간은 5분 단위 목록으로 제공(PC 크롬은 datetime-local의 step을 무시해서 직접 만든다)
 (function buildTimeOptions(){
+  // 점심·저녁 시간대(10시~22시)만 5분 단위로 제공 - 새벽시간까지 넣으면 목록이 너무 길어짐
   let html='<option value="">시간 선택</option>';
-  for(let h=0; h<24; h++){
+  for(let h=10; h<=22; h++){
     for(let m=0; m<60; m+=5){
+      if(h===22 && m>0) break; // 22:00까지만
       const hh=String(h).padStart(2,'0'), mm=String(m).padStart(2,'0');
       const ampm = h<12 ? '오전' : '오후';
       const h12 = h%12===0 ? 12 : h%12;
@@ -1473,8 +1477,9 @@ document.getElementById('meetSubmit').onclick=async()=>{
 };
 function timeOptionsHtml(selected){
   let html='';
-  for(let h=0; h<24; h++){
+  for(let h=10; h<=22; h++){
     for(let m=0; m<60; m+=5){
+      if(h===22 && m>0) break;
       const hh=String(h).padStart(2,'0'), mm=String(m).padStart(2,'0');
       const val=hh+':'+mm;
       const ampm=h<12?'오전':'오후', h12=h%12===0?12:h%12;
@@ -2197,20 +2202,27 @@ function openPanel(p){
       if(panel.scrollTop>30){ hintEl.style.display='none'; LS.set('earthmatjido_scrolled','1'); }
     },{passive:true});
   }
-  panel.style.height=''; panel.style.maxHeight=''; panel.style.transition=''; // 새 가게 열 때마다 기본(46vh)부터 시작
+  panel.style.height=''; panel.style.maxHeight=''; panel.style.transition=''; // 새 가게 열 때마다 기본(40vh)부터 시작
   panel.classList.add('open');
   requestAnimationFrame(()=>{
     setTimeout(()=>{
       if(!map) return;
       map.relayout();
       // 카드가 화면 아래를 덮으므로, 경로가 지도 "위쪽"에 오도록 아래 여백을 크게 준다
-      if(isDesktop()) map.setBounds(bounds, 60, 60, 60, 60);
-      else {
-        // 카드가 화면 아래 절반가량을 덮으므로, 그 높이만큼 아래 여백을 크게 줘야
-        // 경로 전체가 지도 위쪽에 잘리지 않고 들어온다
-        const cardH = panel.getBoundingClientRect().height || window.innerHeight*0.46;
-        map.setBounds(bounds, 60, 40, Math.round(cardH*0.55), 40);
-      }
+      if(isDesktop()){ map.setBounds(bounds, 60, 60, 60, 60); return; }
+      // 모바일: 먼저 경로 전체가 보이도록 맞춘 뒤,
+      // 카드에 가리지 않게 지도 중심을 위로 올린다(여백만 주면 지도가 과하게 축소됨)
+      map.setBounds(bounds, 40, 30, 40, 30);
+      setTimeout(()=>{
+        const mapEl=document.getElementById('map');
+        const mapH=mapEl.getBoundingClientRect().height||window.innerHeight;
+        const cardH=panel.getBoundingClientRect().height||mapH*0.40;
+        // 가려지는 높이의 절반만큼 지도를 위로 이동 → 경로가 보이는 영역 가운데로 옴
+        const shiftPx=Math.round(cardH/2);
+        const proj=map.getProjection();
+        const c=proj.pointFromCoords(map.getCenter());
+        map.setCenter(proj.coordsFromPoint(new kakao.maps.Point(c.x, c.y - shiftPx)));
+      },60);
     },80);
   });
 }
@@ -2226,7 +2238,7 @@ function closePanel(){
   requestAnimationFrame(()=>{ setTimeout(()=>{ if(map) map.relayout(); },80); });
 }
 // 모바일 바텀시트: grab 핸들을 드래그해서 높이 조절, 놓으면 가까운 스냅 지점(34/58/82%)으로 붙음
-const SHEET_SNAPS=[.46,.68,.88];
+const SHEET_SNAPS=[.40,.65,.88];
 function setupSheetDrag(){
   if(isDesktop()) return;
   const grab=panel.querySelector('.grab'), closeBar=panel.querySelector('.panel-close');
@@ -2281,6 +2293,7 @@ function naverPlace(p){window.open(`https://map.naver.com/p/search/${encodeURICo
 // 헤더를 한 번이라도 내려보면 안내를 숨김
 (function(){
   const hdr=document.querySelector('header'), hint=document.getElementById('hdrHint');
+  if(hint&&hdr) hint.onclick=()=>{ hdr.scrollTo({top:hdr.scrollHeight, behavior:'smooth'}); };
   if(!hdr||!hint) return;
   if(LS.get('earthmatjido_hdr_scrolled')) hint.style.display='none';
   hdr.addEventListener('scroll',()=>{
