@@ -84,10 +84,6 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .meet-joinform{display:flex;gap:6px;margin-top:9px}
 .host-badge{flex:1;display:flex;align-items:center;justify-content:center;background:var(--line-soft);color:var(--sub);
   border-radius:10px;padding:9px;font-size:.78rem;font-weight:700}
-.chat-name-row{display:flex;align-items:center;gap:7px;margin-top:8px}
-.chat-name-row .cn-label{font-size:.72rem;font-weight:700;color:var(--sub);flex:0 0 auto}
-.chat-name-row .meet-chat-name{flex:1;min-width:0;font:inherit;font-size:.8rem;padding:7px 10px;border-radius:9px;border:1.5px solid var(--line);outline:none}
-.chat-name-row .meet-chat-name:focus{border-color:var(--reg)}
 .chat-item{display:flex;align-items:flex-end;gap:8px}
 .chat-item .ci-text{flex:1;min-width:0;word-break:break-word}
 .chat-item .ci-time{flex:0 0 auto;font-size:.64rem;color:var(--sub);white-space:nowrap}
@@ -109,7 +105,11 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .myname-label{font-size:.78rem;font-weight:800;color:var(--sub-deep);flex:0 0 auto}
 .myname-row input{flex:1;min-width:0;font:inherit;font-size:.85rem;padding:8px 11px;border-radius:10px;border:1.5px solid var(--line);outline:none;background:var(--surface)}
 .myname-row input:focus{border-color:var(--reg)}
-.myname-hint{font-size:.68rem;color:var(--us);font-weight:700;flex:0 0 auto}
+.myname-btn{flex:0 0 auto;border:none;background:var(--ink);color:#fff;font:inherit;font-weight:800;font-size:.78rem;
+  padding:8px 14px;border-radius:10px;cursor:pointer}
+.myname-btn:active{transform:scale(.97)}
+.myname-row input.locked{background:var(--line-soft);color:var(--sub-deep);cursor:default}
+.myname-saved{margin:-6px 0 10px;font-size:.72rem;color:#0A6B3A;background:var(--us-bg);border-radius:8px;padding:7px 11px;line-height:1.5}
 .name-warn{margin:-4px 0 12px;padding:10px 12px;border:1.5px solid #BFD9F2;background:#F2F8FD;border-radius:var(--r-md);
   font-size:.75rem;line-height:1.65;color:#3D5A75}
 .name-warn b{color:#1F4E79}
@@ -602,8 +602,9 @@ footer{padding:6px 14px;font-size:.64rem;color:#A79C87;background:var(--paper);b
     <div class="myname-row">
       <span class="myname-label">👤 내 이름</span>
       <input type="text" id="meetNameInput" placeholder="본인 이름" maxlength="20">
-      <span class="myname-hint" id="meetNameHint"></span>
+      <button type="button" class="myname-btn" id="meetNameBtn">저장</button>
     </div>
+    <div class="myname-saved" id="meetNameSaved" style="display:none"></div>
     <div class="name-warn">
       🙋 <b>본인 이름이나 별명으로 참여해주세요!</b><br>
       🙏 다른 분 이름으로는 적지 말아주세요<br>
@@ -1243,18 +1244,41 @@ async function fetchVoteCountsBulk(shops){
 }
 /* ── 번개모임 UI ── */
 const meetBg=document.getElementById('meetBg'), meetList=document.getElementById('meetList');
-const meetNameInput=document.getElementById('meetNameInput'), meetNameHint=document.getElementById('meetNameHint');
-// 이름은 입력하는 즉시 저장(한 번 잘못 넣어도 언제든 고칠 수 있게)
-meetNameInput.addEventListener('input',()=>{
+const meetNameInput=document.getElementById('meetNameInput');
+const meetNameBtn=document.getElementById('meetNameBtn');
+const meetNameSaved=document.getElementById('meetNameSaved');
+// 이름은 이 기기에 저장돼서 다음에 열어도 그대로 유지됨(수정 누르면 바꿀 수 있음)
+function lockNameUI(){
+  const nm=getMyName();
+  if(nm){
+    meetNameInput.value=nm; meetNameInput.readOnly=true; meetNameInput.classList.add('locked');
+    meetNameBtn.textContent='수정';
+    meetNameSaved.style.display='block';
+    meetNameSaved.innerHTML=`✅ <b>${escapeHtml(nm)}</b> 님으로 저장됐어요 · 이 기기에서는 다음에도 그대로 쓰여요`;
+  }else{
+    meetNameInput.readOnly=false; meetNameInput.classList.remove('locked');
+    meetNameBtn.textContent='저장';
+    meetNameSaved.style.display='none';
+  }
+}
+meetNameBtn.onclick=()=>{
+  if(meetNameInput.readOnly){ // 수정 모드로 전환
+    meetNameInput.readOnly=false; meetNameInput.classList.remove('locked');
+    meetNameBtn.textContent='저장';
+    meetNameSaved.style.display='none';
+    meetNameInput.focus(); meetNameInput.select();
+    return;
+  }
   const v=meetNameInput.value.trim();
-  if(v){ setMyName(v); meetNameHint.textContent='저장됨'; }
-  else meetNameHint.textContent='';
-});
+  if(!v){ meetNameInput.focus(); return; }
+  setMyName(v);
+  lockNameUI();
+};
+meetNameInput.addEventListener('keydown',e=>{ if(e.key==='Enter') meetNameBtn.click(); });
 document.getElementById('meetBtn').onclick=async function(){
   if(!sb){ alert('번개모임 기능을 불러오지 못했어요. 인터넷 연결을 확인해주세요.'); return; }
   meetBg.classList.add('open');
-  meetNameInput.value=getMyName();
-  meetNameHint.textContent=getMyName()?'저장됨':'';
+  lockNameUI();
   ['meetShopInput','meetTimeInput','meetPlaceInput','meetNoteInput'].forEach(id=>document.getElementById(id).value='');
   if(typeof refreshWhenUI==='function') refreshWhenUI();
   if(typeof clearPickedShop==='function') clearPickedShop();
@@ -1451,10 +1475,6 @@ async function renderMeetList(){
       </div>
       <div class="meet-chat" style="display:none">
         <div class="meet-chat-list"></div>
-        <div class="chat-name-row">
-          <span class="cn-label">이름</span>
-          <input type="text" class="meet-chat-name" placeholder="이름 또는 별명" maxlength="20">
-        </div>
         <div class="review-input-row" style="margin-top:6px;margin-bottom:0">
           <input type="text" class="meet-chat-input" placeholder="예: 12시 5분에 로비로 갈게요" maxlength="200">
           <button class="meet-chat-send">보내기</button>
@@ -1567,14 +1587,18 @@ async function renderMeetList(){
       else stopChatPolling(); // 창을 닫으면 즉시 중단(불필요한 통신 방지)
     };
     card._stopChat = stopChatPolling; // 목록이 다시 그려질 때 정리하기 위해 보관
-    const chatName=card.querySelector('.meet-chat-name');
-    chatName.value=getMyName();
-    chatName.addEventListener('input',()=>{ const v=chatName.value.trim(); if(v) setMyName(v); });
+    // 이 방에서 쓰는 내 이름은 고정: 주최자면 모집할 때 쓴 이름, 참가자면 참여할 때 쓴 이름
+    const myJoin = joins.find(j=>j.user_id===VOTER_ID);
+    const myRoomName = isHost ? m.host_name : (myJoin ? myJoin.user_name : '');
+    if(!myRoomName){
+      chatInput.disabled=true;
+      chatInput.placeholder='참여하면 대화할 수 있어요';
+      card.querySelector('.meet-chat-send').disabled=true;
+    }
     async function sendChat(){
       const text=chatInput.value.trim(); if(!text) return;
-      const nm=chatName.value.trim();
-      if(!nm){ chatName.focus(); return; }
-      setMyName(nm);
+      const nm=myRoomName;
+      if(!nm) return;
       const btn=card.querySelector('.meet-chat-send');
       btn.disabled=true;
       const ok=await postReview(chatKey, `${nm}: ${text}`);
