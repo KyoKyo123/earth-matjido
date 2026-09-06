@@ -1819,9 +1819,8 @@ async function renderMeetList(){
   meetList.querySelectorAll('.meet-card').forEach(c=>{ if(c._stopChat) c._stopChat(); });
   const meetups=await fetchMeetups();
   if(!meetups.length){
-    meetList.innerHTML='<div class="best-empty">지금 모집 중인 약속이 없어요.<br>첫 모집을 올려보세요!<br><span style="font-size:.72rem;color:var(--sub);display:block;margin-top:8px">약속 시간이 1시간 지나면 목록에서 자동으로 사라져요</span></div>';
-    // 볼 모집이 없으면 바로 쓸 수 있게 폼을 펼쳐둔다
-    if(typeof toggleMeetForm==='function' && meetFormWrap && meetFormWrap.style.display==='none') toggleMeetForm(true);
+    // 폼은 자동으로 펼치지 않는다(원하는 사람만 버튼을 눌러 열게)
+    meetList.innerHTML='<div class="best-empty">지금 모집 중인 약속이 없어요<br><span style="font-size:.76rem;color:var(--sub);display:block;margin-top:6px">위의 <b>+ 새 모집 올리기</b>로 첫 약속을 만들어보세요</span><span style="font-size:.7rem;color:var(--sub);display:block;margin-top:10px">약속 시간이 1시간 지나면 목록에서 자동으로 사라져요</span></div>';
     return;
   }
   meetList.innerHTML='';
