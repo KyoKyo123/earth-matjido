@@ -406,7 +406,6 @@ h1 em{font-style:normal;color:var(--us)}
 .votebtn:disabled{opacity:.5;cursor:default}
 .core-phone{display:flex;align-items:center;gap:6px;font-size:.85rem;font-weight:700;color:var(--ink)}
 .core-phone a{color:var(--blue);text-decoration:none}
-.detail-divider{border-top:1.5px dashed var(--line);margin-top:16px}
 .more-detail{margin-top:13px;display:flex;flex-direction:column;gap:2px}
 .ctline{font-size:.76rem;color:var(--sub);margin-bottom:4px}.ctline b{color:var(--ct)}
 .s-links{margin-top:13px;display:flex;gap:6px;flex-wrap:wrap}
@@ -416,7 +415,7 @@ h1 em{font-style:normal;color:var(--us)}
 /* 화면이 좁으면 두 줄로 자연스럽게 접힘 */
 @media (max-width:400px){ .s-links button{flex:1 1 46%;font-size:.74rem} }
 .kakao{background:#FEE500;color:#191600}.nvr{background:#03C75A;color:#fff}.ctlink{background:#3C2A6E;color:#fff}
-.review-section{margin-top:18px;padding-top:14px;border-top:1.5px dashed var(--line)}
+.review-section{margin-top:16px;padding-top:16px;border-top:1.5px dashed var(--line)}
 .closebtn{background:var(--surface);border-color:var(--line)!important;color:var(--sub)}
 
 footer{padding:6px 14px calc(6px + env(safe-area-inset-bottom));font-size:.64rem;color:#A79C87;background:var(--paper);box-shadow:0 -1px 0 var(--line)}
@@ -2671,7 +2670,6 @@ function openPanel(p){
   : `🚶 직선 ${Math.round(p.dist)}m · 도보 약 ${min}분`}</div>
     ${warnHtml}
     <div class="s-links" id="slinksCore"></div>
-    <div class="detail-divider"></div>
     <div class="more-detail">
       ${p.wait===3?'<span class="tag t-w2">웨이팅 헬·원격필수</span>':p.wait===2?'<span class="tag t-w2">웨이팅 필수</span>':p.wait===1?'<span class="tag t-w1">붐빔 주의</span>':''}
       ${p.ct===1?'<div class="ctline">📱 캐치테이블 <b>입점 확인됨</b> — 원격 웨이팅 가능</div>':p.ct===-1?'<div class="ctline">📱 캐치테이블 <b style="color:#C43A2E">미입점</b> — 현장만</div>':''}
