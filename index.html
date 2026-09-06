@@ -2264,6 +2264,26 @@ function buildMap(){
   setTimeout(()=>{ if(typeof updateMeetBadge==='function') updateMeetBadge(); }, 800); // 오늘 번개 건수 뱃지
   kakao.maps.event.addListener(map,'click',closePanel);
   window.addEventListener('resize',()=>{ if(map) setTimeout(()=>map.relayout(),50); });
+
+  // 카카오맵 같은 다른 앱에 갔다가 뒤로가기로 돌아오면
+  // 브라우저가 페이지를 얼린 상태로 되살려서 지도가 검게 남는 문제를 막는다
+  function revive(){
+    if(!map) return;
+    // 여러 번 나눠 호출: 화면 크기가 잡히는 시점이 기기마다 달라서
+    [0, 120, 350, 700].forEach(d=>setTimeout(()=>{
+      try{
+        map.relayout();
+        map.setCenter(new kakao.maps.LatLng(OFFICE.lat, OFFICE.lng));
+        if(curOpen) map.setCenter(new kakao.maps.LatLng(curOpen.lat, curOpen.lng));
+      }catch(e){}
+    }, d));
+  }
+  // 뒤로가기로 되살아났을 때(persisted=true면 얼려뒀던 페이지)
+  window.addEventListener('pageshow', (e)=>{ if(e.persisted) revive(); });
+  // 다른 앱 갔다가 화면으로 돌아왔을 때
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) revive(); });
+  // 창이 다시 활성화됐을 때
+  window.addEventListener('focus', revive);
 }
 
 const CATS=["전체","어스인증","한식","일식","중식","양식","아시안","인도·커리","고기","치킨·술집","샐러드·가볍게","카페·베이커리"];
@@ -2761,7 +2781,19 @@ function setupSheetDrag(){
 }
 function kakaoRoute(p){
   const sp=`${OFFICE.lat},${OFFICE.lng}`,ep=`${p.lat},${p.lng}`;
-  if(IS_MOBILE)window.location.href=`kakaomap://route?sp=${sp}&ep=${ep}&by=FOOT`;
+  if(IS_MOBILE){
+    // 현재 페이지를 떠나지 않고 앱만 띄운다
+    // (location.href로 이동하면 돌아왔을 때 지도가 깨진 채 복원됨)
+    const url=`kakaomap://route?sp=${sp}&ep=${ep}&by=FOOT`;
+    const ifr=document.createElement('iframe');
+    ifr.style.display='none'; ifr.src=url;
+    document.body.appendChild(ifr);
+    setTimeout(()=>{ try{ ifr.remove(); }catch(e){} }, 1200);
+    // 앱이 없어서 안 열리는 경우를 대비해 웹 지도로도 안내
+    setTimeout(()=>{
+      if(!document.hidden) window.open(`https://map.kakao.com/link/to/${encodeURIComponent(p.n)},${p.lat},${p.lng}`,'_blank','noopener');
+    }, 900);
+  }
   else window.open(`https://map.kakao.com/link/to/${encodeURIComponent(p.n)},${p.lat},${p.lng}`,'_blank','noopener');
 }
 function naverPlace(p){window.open(`https://map.naver.com/p/search/${encodeURIComponent(p.n+' 합정')}`,'_blank','noopener');}
@@ -2794,6 +2826,12 @@ document.getElementById('hdrToggle').onclick=function(){
   hdr.addEventListener('transitionend',kick,{once:true});
 };
 const qi=document.getElementById('q'),qc=document.getElementById('qclr');
+let __searchOpenTimer=null;
+function openIfSingleResult(){
+  // 검색 결과가 딱 한 곳이면 카드를 자동으로 열어줌(핀을 따로 누르지 않아도 되게)
+  const pts=P.filter(matchCat);
+  if(q && pts.length===1 && curOpen!==pts[0]) openPanel(pts[0]);
+}
 qi.addEventListener('input',()=>{q=qi.value.trim().toLowerCase();qc.classList.toggle('on',!!q);closePanel();applyFilter();
   const pts=P.filter(matchCat);
   if(q && pts.length){
@@ -2807,7 +2845,21 @@ qi.addEventListener('input',()=>{q=qi.value.trim().toLowerCase();qc.classList.to
       map.setBounds(b);
     }
   }
+  // 타이핑이 멈춘 뒤에만 카드를 열어 입력을 방해하지 않게 함
+  clearTimeout(__searchOpenTimer);
+  __searchOpenTimer=setTimeout(openIfSingleResult, 600);
 });
+// 엔터(또는 폰 키보드의 검색 버튼)를 누르면 바로 열기
+qi.addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  e.preventDefault();
+  clearTimeout(__searchOpenTimer);
+  qi.blur(); // 폰에서 키보드를 내려 지도·카드가 잘 보이게
+  const pts=P.filter(matchCat);
+  if(q && pts.length===1) openPanel(pts[0]);
+});
+// 검색창 자체를 '검색' 타입으로 두면 폰에서 X를 눌렀을 때도 반응함
+qi.addEventListener('search',()=>{ clearTimeout(__searchOpenTimer); openIfSingleResult(); });
 qc.onclick=()=>{qi.value="";q="";qc.classList.remove('on');applyFilter();qi.focus();};
 
 
