@@ -840,12 +840,18 @@ async function fetchReviews(shop){
     return data;
   }catch(e){ return []; }
 }
-async function softDeleteMessage(id){
+async function softDeleteMessage(id, myName){
   // 카톡처럼 내용만 지우고 "삭제된 메시지입니다"로 남김
   if(!sb) return null;
   try{
-    const { error } = await sb.from('reviews').update({ deleted:true }).eq('id', id).eq('author', VOTER_ID);
-    return error ? null : true;
+    // 서버에서도 한 번 더 확인: 같은 기기 + 그 메시지를 쓴 이름이 지금 내 이름과 같아야 함
+    const { data: row } = await sb.from('reviews').select('comment,author').eq('id', id).maybeSingle();
+    if(!row || row.author!==VOTER_ID) return null;
+    const writer=(row.comment||'').split(':')[0].trim();
+    if(myName && writer!==myName) return null;
+    const { data, error } = await sb.from('reviews').update({ deleted:true }).eq('id', id).eq('author', VOTER_ID).select();
+    if(error || !data || !data.length) return null;
+    return true;
   }catch(e){ return null; }
 }
 async function markChatRead(chatKey, ids){
@@ -1891,7 +1897,10 @@ async function renderMeetList(){
         const el=document.createElement('div'); el.className='review-item chat-item';
         const d=new Date(it.created_at);
         const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0');
-        const isMine = it.author===VOTER_ID;
+        // 같은 기기라도 "그때 쓴 이름"과 "지금 내 이름"이 같아야 내 메시지로 인정
+        // (이름을 바꿔가며 예전 이름으로 쓴 메시지까지 지우는 것을 방지)
+        const msgName = (it.comment||'').split(':')[0].trim();
+        const isMine = it.author===VOTER_ID && msgName===myRoomName;
         // 보낸 지 5분 안이고 내 메시지면 삭제 가능
         const within5m = (Date.now()-d.getTime()) < 5*60*1000;
         // 안 읽은 사람 수 = 전체 인원 - (읽은 사람 + 보낸 사람 1명)
@@ -1910,7 +1919,7 @@ async function renderMeetList(){
           if(db) db.onclick=async()=>{
             if(!confirm('이 메시지를 삭제할까요?\n(5분 이내만 가능해요)')) return;
             db.disabled=true;
-            const ok=await softDeleteMessage(it.id);
+            const ok=await softDeleteMessage(it.id, myRoomName);
             if(ok){ lastChatSig=''; await loadChat(false); }
             else { alert('삭제 기능이 아직 준비되지 않았어요.\n관리자에게 알려주세요.'); db.disabled=false; }
           };
