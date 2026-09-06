@@ -1890,9 +1890,10 @@ async function renderMeetList(){
         const isMine = it.author===VOTER_ID;
         // 보낸 지 5분 안이고 내 메시지면 삭제 가능
         const within5m = (Date.now()-d.getTime()) < 5*60*1000;
-        // 안 읽은 사람 수(보낸 사람은 당연히 읽은 것으로 계산)
+        // 안 읽은 사람 수 = 전체 인원 - (읽은 사람 + 보낸 사람 1명)
+        // 보낸 사람은 읽음 기록을 남기지 않으므로 따로 더해준다
         const readCnt = (reads[it.id] ? reads[it.id].size : 0);
-        const unread = Math.max(0, memberCount - Math.max(readCnt,1));
+        const unread = Math.max(0, memberCount - readCnt - 1);
         if(it.deleted){
           el.classList.add('ci-deleted');
           el.innerHTML=`<span class="ci-text">삭제된 메시지입니다</span><span class="ci-time">${hh}:${mm}</span>`;
@@ -1907,7 +1908,7 @@ async function renderMeetList(){
             db.disabled=true;
             const ok=await softDeleteMessage(it.id);
             if(ok){ lastChatSig=''; await loadChat(false); }
-            else { alert('삭제에 실패했어요.'); db.disabled=false; }
+            else { alert('삭제 기능이 아직 준비되지 않았어요.\n관리자에게 알려주세요.'); db.disabled=false; }
           };
         }
         chatList.appendChild(el);
