@@ -107,6 +107,10 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .chat-item .ci-text{flex:1;min-width:0;word-break:break-word}
 .chat-item .ci-time{flex:0 0 auto;font-size:.64rem;color:var(--sub);white-space:nowrap}
 .chat-item.pending{opacity:.55}
+.chat-item.ci-deleted .ci-text{color:var(--sub);font-style:italic}
+.chat-item .ci-unread{flex:0 0 auto;font-size:.62rem;font-weight:800;color:#E8560F;min-width:12px;text-align:center}
+.chat-item .ci-del{flex:0 0 auto;border:none;background:none;cursor:pointer;font-size:.7rem;padding:0 2px;opacity:.5}
+.chat-item .ci-del:active{opacity:1}
 .meet-joinform .mj-name{flex:1;min-width:0;font:inherit;font-size:.83rem;padding:9px 11px;border-radius:10px;border:1.5px solid var(--us);outline:none;transition:border-color .15s,background .15s}
 .meet-joinform .mj-name.need{border-color:#C4402E;background:#FDF2F0;animation:shakeX .3s}
 @keyframes shakeX{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
@@ -825,10 +829,41 @@ async function fetchTopShops(limit){
 async function fetchReviews(shop){
   if(!sb) return [];
   try{
-    const { data, error } = await sb.from('reviews').select('id,comment,author,nickname,parent_id,created_at').eq('shop', shop).order('created_at',{ascending:false}).limit(100);
+    let { data, error } = await sb.from('reviews').select('id,comment,author,nickname,parent_id,created_at,deleted').eq('shop', shop).order('created_at',{ascending:false}).limit(100);
+    if(error){
+      // deleted 컬럼이 아직 없는 경우에도 대화가 보이도록 예전 방식으로 다시 시도
+      const r2 = await sb.from('reviews').select('id,comment,author,nickname,parent_id,created_at').eq('shop', shop).order('created_at',{ascending:false}).limit(100);
+      data = r2.data; error = r2.error;
+    }
     if(error || !data) return [];
     return data;
   }catch(e){ return []; }
+}
+async function softDeleteMessage(id){
+  // 카톡처럼 내용만 지우고 "삭제된 메시지입니다"로 남김
+  if(!sb) return null;
+  try{
+    const { error } = await sb.from('reviews').update({ deleted:true }).eq('id', id).eq('author', VOTER_ID);
+    return error ? null : true;
+  }catch(e){ return null; }
+}
+async function markChatRead(chatKey, ids){
+  // 내가 이 메시지들을 읽었다고 기록
+  if(!sb || !ids || !ids.length) return;
+  try{
+    const rows=ids.map(id=>({ chat_key:chatKey, message_id:id, user_id:VOTER_ID }));
+    await sb.from('chat_reads').upsert(rows, { onConflict:'message_id,user_id', ignoreDuplicates:true });
+  }catch(e){}
+}
+async function fetchChatReads(chatKey){
+  // 메시지별로 몇 명이 읽었는지
+  if(!sb) return {};
+  try{
+    const { data } = await sb.from('chat_reads').select('message_id,user_id').eq('chat_key', chatKey);
+    const out={};
+    (data||[]).forEach(r=>{ (out[r.message_id]=out[r.message_id]||new Set()).add(r.user_id); });
+    return out;
+  }catch(e){ return {}; }
 }
 async function postReview(shop, comment, nickname, parentId){
   if(!sb) return null;
@@ -1782,6 +1817,12 @@ async function renderMeetList(){
         </div>
         <label>어디서 모일까요?</label>
         <input type="text" class="ef-place" maxlength="60" value="${escapeHtml(m.place||'')}">
+        <label>몇 명이 모일까요?</label>
+        <div class="cap-row">
+          <button type="button" class="cap-btn ef-capminus">−</button>
+          <span class="cap-val ef-capval">${cap?cap+'명':'제한 없음'}</span>
+          <button type="button" class="cap-btn ef-capplus">+</button>
+        </div>
         <label>한마디</label>
         <input type="text" class="ef-note" maxlength="200" value="${escapeHtml(m.note||'')}">
         <div class="ef-actions">
@@ -1790,6 +1831,24 @@ async function renderMeetList(){
         </div>`;
       card.appendChild(form);
       form.querySelector('.ef-cancel').onclick=()=>form.remove();
+      let efCap = cap || 0;
+      const efCapVal=form.querySelector('.ef-capval');
+      const refreshEfCap=()=>{
+        efCapVal.textContent = efCap ? efCap+'명' : '제한 없음';
+        form.querySelector('.ef-capminus').disabled = efCap<=0;
+        form.querySelector('.ef-capplus').disabled = efCap>=20;
+      };
+      form.querySelector('.ef-capminus').onclick=()=>{
+        // 현재 인원보다 적게는 못 줄임(이미 참여한 사람이 밀려나므로)
+        const least=Math.max(2,total);
+        efCap = efCap<=least ? 0 : efCap-1;
+        refreshEfCap();
+      };
+      form.querySelector('.ef-capplus').onclick=()=>{
+        efCap = efCap===0 ? Math.max(2,total) : Math.min(20, efCap+1);
+        refreshEfCap();
+      };
+      refreshEfCap();
       form.querySelector('.ef-save').onclick=async()=>{
         const shop=form.querySelector('.ef-shop').value.trim();
         const ed=form.querySelector('.ef-date').value, et=form.querySelector('.ef-timesel').value;
@@ -1798,7 +1857,8 @@ async function renderMeetList(){
         const ok=await updateMeetup(m.id,{
           shop, meet_at:et, meet_date:ed,
           place:form.querySelector('.ef-place').value.trim()||null,
-          note:form.querySelector('.ef-note').value.trim()||null
+          note:form.querySelector('.ef-note').value.trim()||null,
+          capacity: efCap||null
         });
         if(ok){ await renderMeetList(); }
         else { alert('수정에 실패했어요. 잠시 후 다시 시도해주세요.'); btn.disabled=false; }
@@ -1813,20 +1873,47 @@ async function renderMeetList(){
     async function loadChat(showLoading){
       if(showLoading) chatList.innerHTML='<div class="review-empty">불러오는 중...</div>';
       const items=await fetchReviews(chatKey);
+      const reads=await fetchChatReads(chatKey);
       // 내용이 그대로면 다시 그리지 않음(깜빡임·스크롤 튐 방지)
-      const sig=items.map(i=>i.created_at).join('|');
+      const sig=items.map(i=>i.created_at+(i.deleted?'D':'')).join('|')+'#'+Object.values(reads).map(s=>s.size).join(',');
       if(sig===lastChatSig && !showLoading) return;
       lastChatSig=sig;
       if(!items.length){ chatList.innerHTML='<div class="review-empty">아직 대화가 없어요. 첫 메시지를 남겨보세요!</div>'; return; }
       const atBottom = chatList.scrollHeight - chatList.scrollTop - chatList.clientHeight < 30;
       chatList.innerHTML='';
+      // 이 방 인원(주최자 + 참가자) = 모두 읽으면 숫자가 사라짐
+      const memberCount = joins.length + 1;
       items.slice().reverse().forEach(it=>{
         const el=document.createElement('div'); el.className='review-item chat-item';
         const d=new Date(it.created_at);
         const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0');
-        el.innerHTML=`<span class="ci-text">${escapeHtml(it.comment)}</span><span class="ci-time">${hh}:${mm}</span>`;
+        const isMine = it.author===VOTER_ID;
+        // 보낸 지 5분 안이고 내 메시지면 삭제 가능
+        const within5m = (Date.now()-d.getTime()) < 5*60*1000;
+        // 안 읽은 사람 수(보낸 사람은 당연히 읽은 것으로 계산)
+        const readCnt = (reads[it.id] ? reads[it.id].size : 0);
+        const unread = Math.max(0, memberCount - Math.max(readCnt,1));
+        if(it.deleted){
+          el.classList.add('ci-deleted');
+          el.innerHTML=`<span class="ci-text">삭제된 메시지입니다</span><span class="ci-time">${hh}:${mm}</span>`;
+        }else{
+          el.innerHTML=`<span class="ci-text">${escapeHtml(it.comment)}</span>`+
+            `${unread>0?`<span class="ci-unread">${unread}</span>`:''}`+
+            `${isMine&&within5m?'<button class="ci-del" title="삭제">🗑️</button>':''}`+
+            `<span class="ci-time">${hh}:${mm}</span>`;
+          const db=el.querySelector('.ci-del');
+          if(db) db.onclick=async()=>{
+            if(!confirm('이 메시지를 삭제할까요?\n(5분 이내만 가능해요)')) return;
+            db.disabled=true;
+            const ok=await softDeleteMessage(it.id);
+            if(ok){ lastChatSig=''; await loadChat(false); }
+            else { alert('삭제에 실패했어요.'); db.disabled=false; }
+          };
+        }
         chatList.appendChild(el);
       });
+      // 지금 보이는 메시지들을 읽음 처리(내가 쓴 것 제외)
+      markChatRead(chatKey, items.filter(i=>i.author!==VOTER_ID).map(i=>i.id));
       // 맨 아래를 보고 있었을 때만 자동으로 최신 메시지까지 스크롤(위를 읽는 중이면 방해 안 함)
       if(atBottom || showLoading) chatList.scrollTop=chatList.scrollHeight;
     }
