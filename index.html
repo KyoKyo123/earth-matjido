@@ -1606,21 +1606,34 @@ document.addEventListener('keydown', (e)=>{
   if(panel && panel.classList.contains('open')){ closePanel(); return; }
 });
 let meetWatchTimer=null, meetChannel=null;
+function meetListBusy(){
+  // 수정 중이거나 대화창을 열어둔 상태면 목록을 다시 그리지 않는다
+  // (다시 그리면 작성 중이던 내용이 사라져 버림)
+  if(!meetList) return false;
+  if(meetList.querySelector('.meet-editform')) return true;      // 수정 폼 열림
+  if(meetList.querySelector('.meet-joinform[style*="flex"]')) return true; // 참여 이름 입력 중
+  const openChat=[...meetList.querySelectorAll('.meet-chat')].some(c=>c.style.display!=='none');
+  if(openChat) return true;                                       // 대화창 열림
+  const ae=document.activeElement;
+  if(ae && meetList.contains(ae) && (ae.tagName==='INPUT'||ae.tagName==='SELECT')) return true; // 입력 중
+  return false;
+}
+function safeRenderMeetList(){ if(!meetListBusy()) renderMeetList(); }
 function startMeetListWatch(){
   stopMeetListWatch();
   // 모집글이 새로 올라오면 목록에 반영(기본 5초 확인)
-  meetWatchTimer=setInterval(()=>{ renderMeetList(); updateMeetBadge(); }, 5000);
+  meetWatchTimer=setInterval(()=>{ safeRenderMeetList(); updateMeetBadge(); }, 5000);
   if(sb && sb.channel){
     try{
       meetChannel = sb.channel('meet_list')
         .on('postgres_changes', { event:'*', schema:'public', table:'meetups' },
-            ()=>{ renderMeetList(); updateMeetBadge(); })
+            ()=>{ safeRenderMeetList(); updateMeetBadge(); })
         .on('postgres_changes', { event:'*', schema:'public', table:'meetup_joins' },
-            ()=>{ renderMeetList(); })
+            ()=>{ safeRenderMeetList(); })
         .subscribe((st)=>{
           if(st==='SUBSCRIBED'){ // 실시간이 되면 주기 확인은 느슨하게
             clearInterval(meetWatchTimer);
-            meetWatchTimer=setInterval(()=>{ renderMeetList(); }, 20000);
+            meetWatchTimer=setInterval(()=>{ safeRenderMeetList(); }, 20000);
           }
         });
     }catch(e){}
@@ -1932,7 +1945,11 @@ async function renderMeetList(){
       form.className='meet-editform';
       form.innerHTML=`
         <label>어디서 먹을까요?</label>
-        <input type="text" class="ef-shop" maxlength="60" value="${escapeHtml(m.shop)}">
+        <div class="shop-ac-wrap">
+          <input type="text" class="ef-shop" maxlength="60" autocomplete="off" value="${escapeHtml(m.shop)}">
+          <div class="shop-ac-list ef-ac"></div>
+        </div>
+        <div class="shop-picked ef-picked" style="display:none"></div>
         <label>언제 만날까요?</label>
         <div class="datetime-row">
           <input type="date" class="ef-date" value="${m.meet_date}">
@@ -1954,6 +1971,31 @@ async function renderMeetList(){
         </div>`;
       card.appendChild(form);
       form.querySelector('.ef-cancel').onclick=()=>form.remove();
+      // 가게 이름 자동완성(새 모집 폼과 동일하게 지도에 있는 가게를 찾아줌)
+      const efShop=form.querySelector('.ef-shop'), efAC=form.querySelector('.ef-ac'), efPicked=form.querySelector('.ef-picked');
+      function efShowPicked(sp){
+        const walk=sp.walk?`도보 ${sp.walk}분`:'';
+        efPicked.innerHTML=`<div class="sp-name">📍 ${escapeHtml(sp.n)}</div>
+          <div class="sp-meta">${sp.cat}${walk?' · '+walk:''}${sp.us?' · 🟢 어스인증':''}</div>`;
+        efPicked.style.display='block';
+      }
+      const efInit=findMapShop(m.shop);
+      if(efInit) efShowPicked(efInit);
+      efShop.addEventListener('input',()=>{
+        const q2=efShop.value.trim().toLowerCase();
+        efPicked.style.display='none';
+        if(!q2){ efAC.classList.remove('on'); return; }
+        const hits=P.filter(x=>x.n.toLowerCase().includes(q2)).slice(0,8);
+        if(!hits.length){ efAC.classList.remove('on'); return; }
+        efAC.innerHTML='';
+        hits.forEach(sp=>{
+          const el=document.createElement('div'); el.className='shop-ac-item';
+          el.innerHTML=`<span>${escapeHtml(sp.n)}</span><span class="ac-cat">${sp.cat}</span>${sp.walk?`<span class="ac-walk">도보 ${sp.walk}분</span>`:''}`;
+          el.onclick=()=>{ efShop.value=sp.n; efAC.classList.remove('on'); efShowPicked(sp); };
+          efAC.appendChild(el);
+        });
+        efAC.classList.add('on');
+      });
       let efCap = cap || 0;
       const efCapVal=form.querySelector('.ef-capval');
       const refreshEfCap=()=>{
