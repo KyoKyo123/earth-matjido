@@ -1512,14 +1512,16 @@ meetNameBtn.onclick=async ()=>{
     LS.set('earthmatjido_claimed', v);
     if(n>0){
       meetNameSaved.innerHTML=`✅ <b>${escapeHtml(v)}</b> 님으로 저장됐어요 · <b>기존 모집·참여 ${n}건</b>을 이 기기에서도 관리할 수 있어요`;
-      renderMeetList();
     }
+    // 이름이 바뀌면 "내 모집인지" 판정이 달라지므로 항상 목록을 다시 그린다
+    renderMeetList();
   });
 };
 meetNameInput.addEventListener('keydown',e=>{ if(e.key==='Enter') meetNameBtn.click(); });
 document.getElementById('meetBtn').onclick=async function(){
   if(!sb){ alert('번개모임 기능을 불러오지 못했어요. 인터넷 연결을 확인해주세요.'); return; }
   meetBg.classList.add('open');
+  startMeetListWatch();
   lockNameUI();
   ['meetShopInput','meetTimeInput','meetPlaceInput','meetNoteInput'].forEach(id=>document.getElementById(id).value='');
   meetDateInput.value=''; meetTimeSelect.value='';
@@ -1536,8 +1538,34 @@ document.getElementById('meetBtn').onclick=async function(){
     });
   }
 };
+let meetWatchTimer=null, meetChannel=null;
+function startMeetListWatch(){
+  stopMeetListWatch();
+  // 모집글이 새로 올라오면 목록에 반영(기본 5초 확인)
+  meetWatchTimer=setInterval(()=>{ renderMeetList(); updateMeetBadge(); }, 5000);
+  if(sb && sb.channel){
+    try{
+      meetChannel = sb.channel('meet_list')
+        .on('postgres_changes', { event:'*', schema:'public', table:'meetups' },
+            ()=>{ renderMeetList(); updateMeetBadge(); })
+        .on('postgres_changes', { event:'*', schema:'public', table:'meetup_joins' },
+            ()=>{ renderMeetList(); })
+        .subscribe((st)=>{
+          if(st==='SUBSCRIBED'){ // 실시간이 되면 주기 확인은 느슨하게
+            clearInterval(meetWatchTimer);
+            meetWatchTimer=setInterval(()=>{ renderMeetList(); }, 20000);
+          }
+        });
+    }catch(e){}
+  }
+}
+function stopMeetListWatch(){
+  if(meetWatchTimer){ clearInterval(meetWatchTimer); meetWatchTimer=null; }
+  if(meetChannel){ try{ sb.removeChannel(meetChannel); }catch(e){} meetChannel=null; }
+}
 function closeMeetModal(){
   meetBg.classList.remove('open');
+  stopMeetListWatch();
   // 모달을 닫으면 열려있던 대화의 자동갱신도 모두 중단
   meetList.querySelectorAll('.meet-card').forEach(c=>{ if(c._stopChat) c._stopChat(); });
 }
@@ -1934,25 +1962,28 @@ async function renderMeetList(){
     let chatChannel=null;
     function startChatPolling(){
       stopChatPolling();
-      // 1순위: 실시간 구독(새 메시지가 오는 즉시 도착 - 지연 거의 없음)
+      // 기본은 2초마다 확인(실시간이 안 걸려도 최소 이 속도는 보장)
+      chatTimer=setInterval(()=>{ loadChat(false); }, 2000);
+      // 실시간 구독이 성공하면 확인 주기를 늦추고, 새 메시지는 즉시 받는다
       if(sb && sb.channel){
         try{
           chatChannel = sb.channel('chat_'+chatKey)
             .on('postgres_changes',
                 { event:'INSERT', schema:'public', table:'reviews', filter:'shop=eq.'+chatKey },
-                ()=>{ loadChat(false); })
+                ()=>{ lastChatSig=''; loadChat(false); })
             .subscribe((status)=>{
-              // 구독이 안 되면(네트워크·설정 문제) 폴링으로 자동 전환
-              if(status==='CHANNEL_ERROR' || status==='TIMED_OUT') startFallbackPolling();
+              if(status==='SUBSCRIBED'){
+                // 실시간이 잘 되니 백업 확인은 느슨하게(10초)
+                clearInterval(chatTimer);
+                chatTimer=setInterval(()=>{ loadChat(false); }, 10000);
+              }
             });
-        }catch(e){ startFallbackPolling(); }
-      }else startFallbackPolling();
-      // 2순위: 실시간이 놓친 게 있을 수 있으니 느슨하게 백업 확인(10초)
-      chatTimer=setInterval(()=>{ loadChat(false); }, 10000);
+        }catch(e){}
+      }
     }
     function startFallbackPolling(){
       if(chatTimer) clearInterval(chatTimer);
-      chatTimer=setInterval(()=>{ loadChat(false); }, 2500); // 실시간이 안 되면 2.5초마다
+      chatTimer=setInterval(()=>{ loadChat(false); }, 2000);
     }
     function stopChatPolling(){
       if(chatTimer){ clearInterval(chatTimer); chatTimer=null; }
