@@ -409,8 +409,12 @@ h1 em{font-style:normal;color:var(--us)}
 .detail-divider{border-top:1.5px dashed var(--line);margin-top:16px}
 .more-detail{margin-top:13px;display:flex;flex-direction:column;gap:2px}
 .ctline{font-size:.76rem;color:var(--sub);margin-bottom:4px}.ctline b{color:var(--ct)}
-.s-links{margin-top:13px;display:flex;gap:7px;flex-wrap:wrap}
-.s-links button{font:inherit;font-size:.8rem;font-weight:700;border-radius:var(--r-sm);padding:10px 14px;border:1.5px solid transparent;cursor:pointer}
+.s-links{margin-top:13px;display:flex;gap:6px;flex-wrap:wrap}
+.s-links button{flex:1 1 0;min-width:0;font:inherit;font-size:.76rem;font-weight:700;border-radius:var(--r-sm);
+  padding:11px 6px;border:1.5px solid transparent;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-links button:active{transform:scale(.97)}
+/* 화면이 좁으면 두 줄로 자연스럽게 접힘 */
+@media (max-width:400px){ .s-links button{flex:1 1 46%;font-size:.74rem} }
 .kakao{background:#FEE500;color:#191600}.nvr{background:#03C75A;color:#fff}.ctlink{background:#3C2A6E;color:#fff}
 .review-section{margin-top:18px;padding-top:14px;border-top:1.5px dashed var(--line)}
 .closebtn{background:var(--surface);border-color:var(--line)!important;color:var(--sub)}
@@ -2267,23 +2271,26 @@ function buildMap(){
 
   // 카카오맵 같은 다른 앱에 갔다가 뒤로가기로 돌아오면
   // 브라우저가 페이지를 얼린 상태로 되살려서 지도가 검게 남는 문제를 막는다
+  let __reviveAt=0;
   function revive(){
     if(!map) return;
-    // 여러 번 나눠 호출: 화면 크기가 잡히는 시점이 기기마다 달라서
-    [0, 120, 350, 700].forEach(d=>setTimeout(()=>{
+    // 돌아올 때 여러 이벤트가 겹쳐 들어오므로 짧은 시간 내 중복 실행을 막는다
+    const now=Date.now();
+    if(now-__reviveAt < 800) return;
+    __reviveAt=now;
+    // 보던 위치를 유지한 채 크기만 다시 잡는다(화면이 튀지 않게)
+    const keep = (()=>{ try{ return map.getCenter(); }catch(e){ return null; } })();
+    [0, 200, 500].forEach(d=>setTimeout(()=>{
       try{
         map.relayout();
-        map.setCenter(new kakao.maps.LatLng(OFFICE.lat, OFFICE.lng));
-        if(curOpen) map.setCenter(new kakao.maps.LatLng(curOpen.lat, curOpen.lng));
+        if(keep) map.setCenter(keep);
       }catch(e){}
     }, d));
   }
   // 뒤로가기로 되살아났을 때(persisted=true면 얼려뒀던 페이지)
   window.addEventListener('pageshow', (e)=>{ if(e.persisted) revive(); });
-  // 다른 앱 갔다가 화면으로 돌아왔을 때
+  // 다른 앱·탭에서 돌아왔을 때(focus는 중복이라 제외)
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) revive(); });
-  // 창이 다시 활성화됐을 때
-  window.addEventListener('focus', revive);
 }
 
 const CATS=["전체","어스인증","한식","일식","중식","양식","아시안","인도·커리","고기","치킨·술집","샐러드·가볍게","카페·베이커리"];
@@ -2662,11 +2669,12 @@ function openPanel(p){
   const Lc=panel.querySelector('#slinksCore');
   const Le=panel.querySelector('#slinksExtra');
   const mk=(c,t,f)=>{const b=document.createElement('button');b.className=c;b.textContent=t;b.onclick=f;return b;};
-  Lc.appendChild(mk('kakao','🚶 길찾기',()=>kakaoRoute(p)));
-  if(p.ct!==-1){const lb=p.ct===1?'📱 캐치테이블 웨이팅':'캐치테이블 검색';
-    Le.appendChild(mk('ctlink',lb,()=>window.open(p.ctUrl||p.ctSearch,'_blank','noopener')));}
-  else Le.appendChild(mk('ctlink','캐치테이블(미입점)',()=>window.open(p.ctSearch,'_blank','noopener')));
-  Le.appendChild(mk('nvr','🚶 네이버 길찾기',()=>naverPlace(p)));
+  // 길찾기·예약을 한 줄로 나란히 배치(한눈에 보이게)
+  Lc.appendChild(mk('kakao','🚶 카카오맵 길찾기',()=>kakaoRoute(p)));
+  Lc.appendChild(mk('nvr','🚶 네이버 길찾기',()=>naverPlace(p)));
+  if(p.ct!==-1){const lb=p.ct===1?'📱 캐치테이블 웨이팅':'📱 캐치테이블 검색';
+    Lc.appendChild(mk('ctlink',lb,()=>window.open(p.ctUrl||p.ctSearch,'_blank','noopener')));}
+  else Lc.appendChild(mk('ctlink','캐치테이블(미입점)',()=>window.open(p.ctSearch,'_blank','noopener')));
   if(!isDesktop()) Le.appendChild(mk('closebtn','닫기',closePanel));
   panel.classList.remove('expanded');
   setupSheetDrag();
@@ -2821,13 +2829,16 @@ function kakaoRoute(p){
   if(IS_MOBILE){
     // 현재 페이지를 떠나지 않고 앱만 띄운다
     // (location.href로 이동하면 돌아왔을 때 지도가 깨진 채 복원됨)
-    const url=`kakaomap://route?sp=${sp}&ep=${ep}&by=FOOT`;
+    // 공식 문서 기준 이동수단은 소문자(foot). 대문자면 도보로 인식되지 않음
+    const url=`kakaomap://route?sp=${sp}&ep=${ep}&by=foot`;
     const ifr=document.createElement('iframe');
     ifr.style.display='none'; ifr.src=url;
     document.body.appendChild(ifr);
     setTimeout(()=>{ try{ ifr.remove(); }catch(e){} }, 1200);
-    // 앱이 없어서 안 열리는 경우를 대비해 웹 지도로도 안내
-    setTimeout(()=>{ if(!document.hidden) window.open(webUrl,'_blank','noopener'); }, 900);
+    // 앱이 없으면 모바일웹 스킴으로(일반 웹 주소는 폰에서 길찾기가 안 뜨는 사례가 있음)
+    setTimeout(()=>{
+      if(!document.hidden) window.open(`https://m.map.kakao.com/scheme/route?sp=${sp}&ep=${ep}&by=foot`,'_blank','noopener');
+    }, 900);
   }
   else window.open(webUrl,'_blank','noopener');
 }
