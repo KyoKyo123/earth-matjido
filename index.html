@@ -99,6 +99,7 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .meet-joinbtn.joined{background:var(--us);color:#fff}
 .meet-joinbtn:disabled{background:var(--line-soft);border-color:var(--line);color:var(--sub);cursor:default}
 .meet-card.full{opacity:.82}
+.full-note{margin-top:7px;font-size:.72rem;font-weight:700;color:var(--ct);background:#EAF3FD;border-radius:8px;padding:6px 10px}
 .full-tag{margin-left:7px;font-size:.66rem;font-weight:800;background:#C4402E;color:#fff;border-radius:999px;padding:2px 8px;vertical-align:middle}
 .meet-joinform{display:flex;gap:6px;margin-top:9px}
 .host-badge{flex:1;display:flex;align-items:center;justify-content:center;background:var(--line-soft);color:var(--sub);
@@ -1418,6 +1419,7 @@ async function claimMyRecords(name){
     //    (번개모임을 안 쓰고 투표만 한 사람도 기기 이동 시 이어지도록)
     try{
       const { data: ids } = await sb.from('identities').select('id,owner_id').eq('name', name);
+      // 같은 이름이면 같은 사람으로 보고 기록을 합친다(사내 도구라 편의 우선)
       const prevIds=(ids||[]).map(x=>x.owner_id).filter(x=>x && x!==VOTER_ID);
       if(prevIds.length){
         const { data: myVotes } = await sb.from('votes').select('shop').eq('voter', VOTER_ID);
@@ -1720,7 +1722,8 @@ async function renderMeetList(){
     const isHost=m.host_id===VOTER_ID;
     const total=joins.length+1;               // 주최자 포함 현재 인원
     const cap=m.capacity||0;                  // 0이면 제한 없음
-    const isFull = cap>0 && total>=cap && !iJoined && !isHost;
+    const isFull = cap>0 && total>=cap;                 // 정원이 찼는지(뱃지 표시용)
+    const canJoin = !isFull && !iJoined && !isHost;      // 내가 새로 참여할 수 있는지
     const mapShop = findMapShop(m.shop); // 지도에 있는 가게면 메뉴 보기 버튼을 띄움
     const card=document.createElement('div');
     card.className='meet-card'+(isHost?' mine':'')+(isFull?' full':'');
@@ -1731,6 +1734,7 @@ async function renderMeetList(){
       </div>
       <div class="meet-meta">👤 ${escapeHtml(m.host_name)} 모집${m.place?` · 📍 ${escapeHtml(m.place)}`:''}</div>
       ${m.note?`<div class="meet-note">${escapeHtml(m.note)}</div>`:''}
+      ${isFull&&!iJoined&&!isHost?'<div class="full-note">자리는 찼지만 💬 대화로 물어볼 수 있어요</div>':''}
       <div class="meet-people">
         <span class="meet-chip host${isHost?' me':''}">${escapeHtml(m.host_name)}</span>
         ${joins.map(j=>`<span class="meet-chip${j.user_id===VOTER_ID?' me':''}">${escapeHtml(j.user_name)}</span>`).join('')}
@@ -1745,7 +1749,7 @@ async function renderMeetList(){
       <div class="meet-actions">
         ${isHost
           ? '<span class="host-badge">내가 만든 모집이에요</span>'
-          : `<button class="meet-joinbtn${iJoined?' joined':''}" ${isFull?'disabled':''}>${iJoined?'✓ 참여 중 (취소)':(isFull?'모집 완료':'+ 나도 갈래요')}</button>`}
+          : `<button class="meet-joinbtn${iJoined?' joined':''}" ${(!iJoined && isFull)?'disabled':''}>${iJoined?'✓ 참여 중 (취소)':(isFull?'모집 완료':'+ 나도 갈래요')}</button>`}
         <button class="meet-chatbtn">💬 대화</button>
         ${isHost?'<button class="meet-editbtn" title="내 모집 수정">✏️</button><button class="meet-delbtn" title="내 모집 삭제">🗑️</button>':''}
       </div>
