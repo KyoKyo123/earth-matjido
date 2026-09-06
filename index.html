@@ -128,6 +128,14 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .ef-save{flex:1;border:none;background:var(--ink);color:#fff;font:inherit;font-weight:800;font-size:.82rem;padding:9px;border-radius:10px;cursor:pointer}
 .ef-cancel{flex:0 0 auto;border:1.5px solid var(--line);background:var(--surface);color:var(--sub-deep);font:inherit;font-weight:700;font-size:.82rem;padding:9px 14px;border-radius:10px;cursor:pointer}
 /* 제보함 모달 */
+.newmeet-btn{width:100%;margin-bottom:12px;border:1.5px dashed var(--reg);background:var(--reg-bg);color:var(--reg-deep);
+  border-radius:var(--r-md);padding:12px;font:inherit;font-size:.86rem;font-weight:800;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.newmeet-btn:active{background:#F7E3D5}
+.newmeet-btn.open{border-style:solid;background:var(--ink);color:#fff}
+.newmeet-btn .nm-arrow{transition:transform .2s;font-size:.8rem}
+.newmeet-btn.open .nm-arrow{transform:rotate(180deg)}
+.meet-form-wrap{margin-bottom:14px;padding-bottom:14px;border-bottom:1.5px dashed var(--line)}
 .myname-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:10px 12px;background:var(--line-soft);border-radius:var(--r-md)}
 .myname-label{font-size:.78rem;font-weight:800;color:var(--sub-deep);flex:0 0 auto}
 .myname-row input{flex:1;min-width:0;font:inherit;font-size:.85rem;padding:8px 11px;border-radius:10px;border:1.5px solid var(--line);outline:none;background:var(--surface)}
@@ -639,45 +647,50 @@ footer{padding:6px 14px calc(6px + env(safe-area-inset-bottom));font-size:.64rem
     <button class="modal-x" id="meetClose">✕</button>
     <h2>🔥 같이 여기 먹을 사람?</h2>
     <div class="desc">같이 갈 사람을 모아보세요. 오늘부터 한 달 안의 약속이 보여요.</div>
-    <div class="myname-row">
-      <span class="myname-label">👤 내 이름</span>
-      <input type="text" id="meetNameInput" placeholder="본인 이름" maxlength="20">
-      <button type="button" class="myname-btn" id="meetNameBtn">저장</button>
-    </div>
-    <div class="myname-saved" id="meetNameSaved" style="display:none"></div>
-    <div class="name-warn">
-      🙋 <b>본인 이름이나 별명으로 참여해주세요!</b><br>
-      🙏 다른 분 이름으로는 적지 말아주세요<br>
-      💬 <b>대화는 정원이 차도 누구나</b> 할 수 있어요 (구경하다 합류 환영!)<br>
-      📱 다른 기기(폰↔PC)에서도 <b>같은 이름</b>으로 하면 이어서 참여돼요<br>
-      ⏰ 약속은 <b>시간이 1시간 지나면</b> 목록에서 저절로 사라져요
-    </div>
-    <div class="tip-form">
-      <label>어디서 먹을까요? *</label>
-      <div class="shop-ac-wrap">
-        <input type="text" id="meetShopInput" placeholder="가게 이름" maxlength="60" autocomplete="off">
-        <div class="shop-ac-list" id="meetShopAC"></div>
+    <button type="button" class="newmeet-btn" id="newMeetBtn">
+      <span>+ 새 모집 올리기</span><span class="nm-arrow">▾</span>
+    </button>
+    <div class="meet-form-wrap" id="meetFormWrap" style="display:none">
+      <div class="myname-row">
+        <span class="myname-label">👤 내 이름</span>
+        <input type="text" id="meetNameInput" placeholder="본인 이름" maxlength="20">
+        <button type="button" class="myname-btn" id="meetNameBtn">저장</button>
       </div>
-      <div class="shop-picked" id="meetShopPicked" style="display:none"></div>
-      <label>언제 만날까요? *</label>
-      <div class="datetime-row">
-        <input type="date" id="meetDateInput">
-        <select id="meetTimeSelect"><option value="">시간</option></select>
+      <div class="myname-saved" id="meetNameSaved" style="display:none"></div>
+      <div class="name-warn">
+        🙋 <b>본인 이름이나 별명으로 참여해주세요!</b><br>
+        🙏 다른 분 이름으로는 적지 말아주세요<br>
+        💬 <b>대화는 정원이 차도 누구나</b> 할 수 있어요 (구경하다 합류 환영!)<br>
+        📱 다른 기기(폰↔PC)에서도 <b>같은 이름</b>으로 하면 이어서 참여돼요<br>
+        ⏰ 약속은 <b>시간이 1시간 지나면</b> 목록에서 저절로 사라져요
       </div>
-      <input type="hidden" id="meetTimeInput">
-      <div class="when-preview" id="meetWhenPreview" style="display:none"></div>
-      <label>어디서 모일까요?</label>
-      <input type="text" id="meetPlaceInput" placeholder="예: 스퀘어 1층" maxlength="60">
-      <label>몇 명이 모일까요?</label>
-      <div class="cap-row">
-        <button type="button" class="cap-btn" id="capMinus">−</button>
-        <span class="cap-val" id="capVal">제한 없음</span>
-        <button type="button" class="cap-btn" id="capPlus">+</button>
+      <div class="tip-form">
+        <label>어디서 먹을까요? *</label>
+        <div class="shop-ac-wrap">
+          <input type="text" id="meetShopInput" placeholder="가게 이름" maxlength="60" autocomplete="off">
+          <div class="shop-ac-list" id="meetShopAC"></div>
+        </div>
+        <div class="shop-picked" id="meetShopPicked" style="display:none"></div>
+        <label>언제 만날까요? *</label>
+        <div class="datetime-row">
+          <input type="date" id="meetDateInput">
+          <select id="meetTimeSelect"><option value="">시간</option></select>
+        </div>
+        <input type="hidden" id="meetTimeInput">
+        <div class="when-preview" id="meetWhenPreview" style="display:none"></div>
+        <label>어디서 모일까요?</label>
+        <input type="text" id="meetPlaceInput" placeholder="예: 스퀘어 1층" maxlength="60">
+        <label>몇 명이 모일까요?</label>
+        <div class="cap-row">
+          <button type="button" class="cap-btn" id="capMinus">−</button>
+          <span class="cap-val" id="capVal">제한 없음</span>
+          <button type="button" class="cap-btn" id="capPlus">+</button>
+        </div>
+        <div class="cap-hint" id="capHint">인원을 정하면 다 차는 순간 <b>모집 완료</b>로 바뀌어요</div>
+        <label>한마디</label>
+        <input type="text" id="meetNoteInput" placeholder="예: 웨이팅 있을 수 있어요" maxlength="200">
+        <button id="meetSubmit">✓ 이 내용으로 모집 올리기</button>
       </div>
-      <div class="cap-hint" id="capHint">인원을 정하면 다 차는 순간 <b>모집 완료</b>로 바뀌어요</div>
-      <label>한마디</label>
-      <input type="text" id="meetNoteInput" placeholder="예: 웨이팅 있을 수 있어요" maxlength="200">
-      <button id="meetSubmit">✓ 이 내용으로 모집 올리기</button>
     </div>
     <div id="meetList"></div>
   </div>
@@ -1521,6 +1534,7 @@ meetNameInput.addEventListener('keydown',e=>{ if(e.key==='Enter') meetNameBtn.cl
 document.getElementById('meetBtn').onclick=async function(){
   if(!sb){ alert('번개모임 기능을 불러오지 못했어요. 인터넷 연결을 확인해주세요.'); return; }
   meetBg.classList.add('open');
+  toggleMeetForm(false); // 열 때는 목록부터 보이게
   startMeetListWatch();
   lockNameUI();
   ['meetShopInput','meetTimeInput','meetPlaceInput','meetNoteInput'].forEach(id=>document.getElementById(id).value='');
@@ -1538,6 +1552,16 @@ document.getElementById('meetBtn').onclick=async function(){
     });
   }
 };
+// 새 모집 폼 접기/펴기 (기본은 접힘 - 남이 올린 모집을 먼저 보게)
+const newMeetBtn=document.getElementById('newMeetBtn'), meetFormWrap=document.getElementById('meetFormWrap');
+function toggleMeetForm(open){
+  const willOpen = (open===undefined) ? meetFormWrap.style.display==='none' : open;
+  meetFormWrap.style.display = willOpen ? 'block' : 'none';
+  newMeetBtn.classList.toggle('open', willOpen);
+  newMeetBtn.querySelector('span').textContent = willOpen ? '모집 올리기 접기' : '+ 새 모집 올리기';
+  if(willOpen) setTimeout(()=>{ meetFormWrap.scrollIntoView({block:'nearest',behavior:'smooth'}); },50);
+}
+newMeetBtn.onclick=()=>toggleMeetForm();
 let meetWatchTimer=null, meetChannel=null;
 function startMeetListWatch(){
   stopMeetListWatch();
@@ -1705,6 +1729,7 @@ document.getElementById('meetSubmit').onclick=async()=>{
     clearPickedShop();
     meetCapacity=0; refreshCapUI();
     refreshWhenUI(); // 날짜 버튼도 초기 상태로
+    toggleMeetForm(false); // 올리고 나면 폼을 접어 목록이 잘 보이게
     await renderMeetList();
     await updateMeetBadge();
   } else alert('등록에 실패했어요. 다시 시도해주세요.');
@@ -1747,6 +1772,8 @@ async function renderMeetList(){
   const meetups=await fetchMeetups();
   if(!meetups.length){
     meetList.innerHTML='<div class="best-empty">지금 모집 중인 약속이 없어요.<br>첫 모집을 올려보세요!<br><span style="font-size:.72rem;color:var(--sub);display:block;margin-top:8px">약속 시간이 1시간 지나면 목록에서 자동으로 사라져요</span></div>';
+    // 볼 모집이 없으면 바로 쓸 수 있게 폼을 펼쳐둔다
+    if(typeof toggleMeetForm==='function' && meetFormWrap && meetFormWrap.style.display==='none') toggleMeetForm(true);
     return;
   }
   meetList.innerHTML='';
