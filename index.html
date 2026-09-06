@@ -70,6 +70,9 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
   border-radius:var(--r-md);padding:9px;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;transition:background .12s}
 .meetbtn:active{transform:scale(.98)}
 .meetbtn .mcount{background:var(--reg);color:#fff;border-radius:999px;padding:1px 7px;font-size:.7rem;margin-left:4px}
+.date-sep{display:flex;align-items:center;gap:10px;margin:16px 0 10px;color:var(--sub);font-size:.74rem;font-weight:800}
+.date-sep::before,.date-sep::after{content:'';flex:1;height:1px;background:var(--line)}
+.date-sep:first-child{margin-top:4px}
 .meet-card{border:1.5px solid var(--line);border-radius:var(--r-md);padding:12px 13px;margin-bottom:10px;background:var(--surface)}
 .meet-card.mine{border-color:var(--reg);background:#FFF8F3}
 .meet-top{display:flex;align-items:flex-start;gap:8px}
@@ -128,6 +131,12 @@ header.collapsed{max-height:0;padding-top:0;padding-bottom:0;box-shadow:none;ove
 .ef-save{flex:1;border:none;background:var(--ink);color:#fff;font:inherit;font-weight:800;font-size:.82rem;padding:9px;border-radius:10px;cursor:pointer}
 .ef-cancel{flex:0 0 auto;border:1.5px solid var(--line);background:var(--surface);color:var(--sub-deep);font:inherit;font-weight:700;font-size:.82rem;padding:9px 14px;border-radius:10px;cursor:pointer}
 /* 제보함 모달 */
+.noresult{margin:-4px 0 10px;padding:11px 13px;background:#FFF6E9;border:1.5px solid #F0D9B5;border-radius:var(--r-md);
+  font-size:.78rem;line-height:1.6;color:#8A6224;text-align:center}
+.noresult b{color:#6B4A12}
+.nr-tip{margin-top:8px;border:none;background:var(--ink);color:#fff;font:inherit;font-size:.76rem;font-weight:700;
+  padding:7px 14px;border-radius:999px;cursor:pointer}
+.nr-tip:active{transform:scale(.97)}
 .newmeet-btn{width:100%;margin-bottom:12px;border:1.5px dashed var(--reg);background:var(--reg-bg);color:var(--reg-deep);
   border-radius:var(--r-md);padding:12px;font:inherit;font-size:.86rem;font-weight:800;cursor:pointer;
   display:flex;align-items:center;justify-content:center;gap:8px}
@@ -381,6 +390,9 @@ h1 em{font-style:normal;color:var(--us)}
 .menubtn{width:100%;margin-top:12px;border:none;border-radius:var(--r-md);background:linear-gradient(155deg,#3C2A6E,#2A1E4E);color:#fff;
   font:inherit;font-weight:800;font-size:.92rem;padding:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:var(--sh-1)}
 .menubtn:active{transform:scale(.98)}
+.meetherebtn{width:100%;margin-top:8px;border:1.5px solid var(--reg);background:var(--reg-bg);color:var(--reg-deep);
+  border-radius:var(--r-md);padding:11px;font:inherit;font-size:.84rem;font-weight:800;cursor:pointer}
+.meetherebtn:active{background:#F7E3D5;transform:scale(.98)}
 .core-row{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
 .votewidget{display:flex;align-items:center;gap:6px;margin-top:12px;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--r-md);background:var(--surface)}
 .votewidget .vlabel{font-size:.78rem;font-weight:700;color:var(--sub-deep);flex:1}
@@ -577,6 +589,7 @@ footer{padding:6px 14px calc(6px + env(safe-area-inset-bottom));font-size:.64rem
   </div>
   <div class="headrow">
     <div class="searchbar"><span class="ico">🔍</span><input id="q" type="search" placeholder="가게·메뉴·후기 검색" autocomplete="off"><button class="clr" id="qclr">✕</button></div>
+    <div class="noresult" id="noResult" style="display:none"></div>
   </div>
   <div class="chipwrap">
     <button class="chipnext prev" id="chipsPrev" title="이전" aria-label="이전"></button>
@@ -1151,6 +1164,16 @@ document.getElementById('recenterBtn').onclick=()=>{
   map.setLevel(4);
   map.setCenter(new kakao.maps.LatLng(OFFICE.lat,OFFICE.lng));
 };
+let __toastTimer=null;
+function showToast(msg, ms){
+  // 짧은 안내를 지도 위에 잠깐 띄움(사옥 전환 등)
+  const el=document.getElementById('mapBackHint');
+  if(!el) return;
+  el.innerHTML=msg;
+  el.style.display='block';
+  clearTimeout(__toastTimer);
+  __toastTimer=setTimeout(()=>{ el.style.display='none'; }, ms||2000);
+}
 let __guardTimer=null;
 function guardMapBounds(){
   if(!map) return;
@@ -1162,8 +1185,7 @@ function guardMapBounds(){
       if(dist>4000){
         map.setLevel(5);
         map.setCenter(new kakao.maps.LatLng(OFFICE.lat,OFFICE.lng));
-        const el=document.getElementById('mapBackHint');
-        if(el){ el.style.display='block'; setTimeout(()=>{el.style.display='none';},2200); }
+        showToast('회사 근처로 돌아왔어요', 2200);
       }
     }catch(e){}
   },300);
@@ -1202,6 +1224,8 @@ function switchOffice(key){
   map.setCenter(new kakao.maps.LatLng(OFFICE.lat,OFFICE.lng));
   applyFilter();
   buildCatStepper(); // 거리 기준이 바뀌었으니 룰렛 스테퍼 재고 표시도 갱신
+  // 도보시간이 전부 바뀌므로 어떤 사옥 기준인지 알려줌
+  if(typeof showToast==='function') showToast(`🏢 <b>${o.name}</b> 기준으로 바뀌었어요`, 2000);
 }
 /* ── 어스 BEST 순위 ── */
 const bestBg=document.getElementById('bestBg'), bestList=document.getElementById('bestList'), bestShowMore=document.getElementById('bestShowMore');
@@ -1559,9 +1583,24 @@ function toggleMeetForm(open){
   meetFormWrap.style.display = willOpen ? 'block' : 'none';
   newMeetBtn.classList.toggle('open', willOpen);
   newMeetBtn.querySelector('span').textContent = willOpen ? '모집 올리기 접기' : '+ 새 모집 올리기';
-  if(willOpen) setTimeout(()=>{ meetFormWrap.scrollIntoView({block:'nearest',behavior:'smooth'}); },50);
+  if(willOpen) setTimeout(()=>{ try{ meetFormWrap.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(e){} },50);
 }
 newMeetBtn.onclick=()=>toggleMeetForm();
+// ESC로 열려있는 모달·카드 닫기(PC에서 ✕를 찾아 누르지 않아도 되게)
+document.addEventListener('keydown', (e)=>{
+  if(e.key!=='Escape') return;
+  // 입력 중일 땐 닫지 않음(실수로 작성 내용이 날아가는 것 방지)
+  const t=e.target;
+  if(t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.tagName==='SELECT')){ t.blur(); return; }
+  // 가장 위에 열린 것부터 하나씩 닫음
+  if(reviewBg && reviewBg.classList.contains('open')){ reviewBg.classList.remove('open'); return; }
+  const rb=document.getElementById('rBg');
+  if(rb && rb.classList.contains('open')){ document.getElementById('rClose').click(); return; }
+  if(meetBg && meetBg.classList.contains('open')){ closeMeetModal(); return; }
+  if(tipBg && tipBg.classList.contains('open')){ tipBg.classList.remove('open'); return; }
+  if(bestBg && bestBg.classList.contains('open')){ bestBg.classList.remove('open'); return; }
+  if(panel && panel.classList.contains('open')){ closePanel(); return; }
+});
 let meetWatchTimer=null, meetChannel=null;
 function startMeetListWatch(){
   stopMeetListWatch();
@@ -1754,6 +1793,15 @@ function round5(t){
   if(mi>=60){ mi=0; h=(h+1)%24; }
   return String(h).padStart(2,'0')+':'+String(mi).padStart(2,'0');
 }
+function fmtDateLabel(dateStr){
+  const today=todayKST();
+  if(dateStr===today) return '오늘';
+  const tmr=new Date(Date.now()+9*3600*1000+86400000).toISOString().slice(0,10);
+  if(dateStr===tmr) return '내일';
+  const d=new Date(dateStr+'T00:00:00Z');
+  const wd=['일','월','화','수','목','금','토'][d.getUTCDay()];
+  return `${d.getUTCMonth()+1}월 ${d.getUTCDate()}일 (${wd})`;
+}
 function fmtMeetWhen(dateStr, timeStr){
   // "오늘 12:30" / "내일 12:30" / "목 12:30" 형태로 짧게 표시
   const t=escapeHtml(timeStr||'');
@@ -1777,7 +1825,14 @@ async function renderMeetList(){
     return;
   }
   meetList.innerHTML='';
+  let lastDate=null;   // 날짜가 바뀔 때마다 구분선을 넣어 여러 날 약속이 섞여도 헷갈리지 않게
   meetups.forEach(m=>{
+    if(m.meet_date && m.meet_date!==lastDate){
+      lastDate=m.meet_date;
+      const sep=document.createElement('div'); sep.className='date-sep';
+      sep.innerHTML=`<span>${fmtDateLabel(m.meet_date)}</span>`;
+      meetList.appendChild(sep);
+    }
     const joins=m.meetup_joins||[];
     const iJoined=joins.some(j=>j.user_id===VOTER_ID);
     const isHost=m.host_id===VOTER_ID;
@@ -2268,6 +2323,19 @@ function applyFilter(){
     }
     else{ p._ov.setMap(null); }
   });
+  // 검색했는데 결과가 없으면 눈에 띄게 안내하고 제보로 연결
+  const nr=document.getElementById('noResult');
+  if(nr){
+    if(q && shown===0){
+      nr.innerHTML=`🔍 <b>'${escapeHtml(q)}'</b> 검색 결과가 없어요<br><button type="button" class="nr-tip" id="noResultTip">📮 제보함에 알려주기</button>`;
+      nr.style.display='block';
+      const tb=document.getElementById('noResultTip');
+      if(tb) tb.onclick=()=>{
+        document.getElementById('tipBtn').click();
+        setTimeout(()=>{ const si=document.getElementById('tipShopInput'); if(si){ si.value=qi.value.trim(); si.focus(); } },260);
+      };
+    }else nr.style.display='none';
+  }
   document.getElementById('count').innerHTML = q ? `"${q}" <b>${shown}곳</b>${dim?` · <span style="color:var(--sub)">주변 ${dim}곳</span>`:''}`
     : timeFilter ? `도보 ${timeFilter}분 이내 ${shown}곳 · <span style="color:var(--sub)">경계 ${dim}곳</span>`
     : `${shown}곳 · <b>US ${us}</b>`;
@@ -2520,6 +2588,7 @@ function openPanel(p){
     <div class="s-stats">${p.us?'<b style="color:var(--us)">🟢 어스 인증 (Notion)</b>':'<span style="color:var(--sub)">별점·리뷰는 아래 카카오맵에서 확인</span>'}${p.approx?' · <small>좌표 근사</small>':''}</div>
     ${memoText?`<div class="core-memo">${memoText}</div>`:''}
     <button class="menubtn" id="menuBtn">📷 사진·메뉴·가격 보기</button>
+    <button class="meetherebtn" id="meetHereBtn">🔥 여기 같이 갈 사람 구하기</button>
     <div class="votewidget" id="voteWidget" data-shop="${p.n.replace(/"/g,'&quot;')}">
       <span class="vlabel">어스 추천/비추천</span>
       <button class="votebtn up" id="voteUpBtn">👍 <span class="vcount" id="voteUpCount">–</span></button>
@@ -2553,6 +2622,20 @@ function openPanel(p){
     </div>`;
   const menuBtn=panel.querySelector('#menuBtn');
   menuBtn.onclick=()=>window.open(p.kakaoUrl||`https://map.kakao.com/?q=${encodeURIComponent(p.n)}`,'_blank','noopener');
+  // 보던 가게 그대로 모집 만들기(가게 이름을 다시 찾아 입력할 필요 없게)
+  panel.querySelector('#meetHereBtn').onclick=()=>{
+    closePanel();
+    document.getElementById('meetBtn').click();
+    setTimeout(()=>{
+      toggleMeetForm(true);
+      const si=document.getElementById('meetShopInput');
+      si.value=p.n;
+      si.dispatchEvent(new Event('input',{bubbles:true}));  // 자동완성 카드까지 뜨도록
+      document.getElementById('meetShopAC').classList.remove('on');
+      if(typeof showPickedShop==='function') showPickedShop(p);
+      document.getElementById('meetDateInput').focus();
+    },260);
+  };
   setupVoteWidget({
     upBtn: panel.querySelector('#voteUpBtn'), sosoBtn: panel.querySelector('#voteSosoBtn'), downBtn: panel.querySelector('#voteDownBtn'),
     upCount: panel.querySelector('#voteUpCount'), sosoCount: panel.querySelector('#voteSosoCount'), downCount: panel.querySelector('#voteDownCount')
