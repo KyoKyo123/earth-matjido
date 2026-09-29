@@ -1,0 +1,22 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    - cron: '0 3 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Supabase 깨우기
+        run: |
+          RES=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://evhiixhyqpsbwssxukxx.supabase.co/rest/v1/votes?select=shop&limit=1" \
+            -H "apikey: sb_publishable_ucfFkIfGUjcx9pOif0fOXQ_o4Argobe")
+          echo "응답 코드: $RES"
+          if [ "$RES" != "200" ]; then
+            echo "::error::Supabase 응답 이상 (코드 $RES)"
+            exit 1
+          fi
+          echo "정상 작동 중"
