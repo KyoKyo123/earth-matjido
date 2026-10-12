@@ -1200,29 +1200,11 @@ function showToast(msg, ms){
   clearTimeout(__toastTimer);
   __toastTimer=setTimeout(()=>{ el.style.display='none'; }, ms||2000);
 }
-let __cullTimer=null;
-function cullOffscreenPins(){
-  // 지도를 움직이거나 확대할 때마다, 보이는 영역 밖 핀은 잠시 떼어둔다
-  // (가게가 500곳이 넘어가면 화면 밖 핀까지 그리느라 느려지므로)
-  if(!map || curOpen) return;   // 카드가 열려 있을 땐 이미 한 곳만 보이므로 건드리지 않음
-  clearTimeout(__cullTimer);
-  __cullTimer=setTimeout(()=>{
-    try{
-      const b=map.getBounds();
-      const sw=b.getSouthWest(), ne=b.getNorthEast();
-      // 화면 가장자리보다 약간 넓게 잡아, 살짝 움직였을 때 핀이 늦게 뜨는 걸 방지
-      const padLat=(ne.getLat()-sw.getLat())*0.25;
-      const padLng=(ne.getLng()-sw.getLng())*0.25;
-      const minLat=sw.getLat()-padLat, maxLat=ne.getLat()+padLat;
-      const minLng=sw.getLng()-padLng, maxLng=ne.getLng()+padLng;
-      P.forEach(p=>{
-        if(!p._shouldShow) return;              // 필터에서 이미 제외된 핀은 그대로 둠
-        const inView = p.lat>=minLat && p.lat<=maxLat && p.lng>=minLng && p.lng<=maxLng;
-        if(inView !== p._onMap){ p._ov.setMap(inView?map:null); p._onMap=inView; }
-      });
-    }catch(e){}
-  }, 120);
-}
+// [삭제됨] cullOffscreenPins — 화면 밖 핀 자동 제거
+// 한 지역의 가게가 820m~1.9km 안에 다 몰려 있어서, 폰 화면(가로 600~800m)에서는
+// 정상 동작해도 핀 절반이 "화면 밖"으로 판정돼 사라졌다.
+// idle 이벤트 복원 타이밍이 어긋나면 "몇십개만 뜨는" 증상이 됨.
+// 최대 302개 오버레이는 성능 부담이 없으므로 필터 상태만으로 표시한다.
 let __guardTimer=null;
 function guardMapBounds(){
   if(!map) return;
@@ -2374,8 +2356,6 @@ function buildMap(){
   // - 조작 실수나 예기치 못한 이동으로 엉뚱한 곳에 갇히는 것을 방지
   kakao.maps.event.addListener(map,'dragend',guardMapBounds);
   kakao.maps.event.addListener(map,'zoom_changed',guardMapBounds);
-  // 화면 밖으로 나간 핀은 지도에서 떼어내 렌더링 부담을 줄인다
-  kakao.maps.event.addListener(map,'idle',cullOffscreenPins);
   drawOfficeMarkers();
   buildMarkers(); buildChips(); buildOfficeTabs(); applyFilter();
   loadStaffPicks(); // 추천 5개 이상인 가게에 "직원 추천" 배지 자동 부여
@@ -2449,8 +2429,15 @@ function matchExceptQuery(p){
   if(timeFilter && p.walk>timeFilter+2) return false;
   return true;
 }
+let __pinsHiddenByPanel=false; // openPanel이 나머지 핀을 CSS로 감춘 상태인지
 function applyFilter(){
   let shown=0,us=0,dim=0;
+  // 카드가 닫혀 있는데 감춘 흔적이 남아 있으면 되살린다
+  // (사옥 전환·검색·배지 갱신 등 closePanel을 안 거치는 경로 대비 안전장치)
+  if(!curOpen && __pinsHiddenByPanel){
+    P.forEach(x=>{ if(x._ov) x._ov.getContent().style.visibility=''; });
+    __pinsHiddenByPanel=false;
+  }
   P.forEach(p=>{
     const catOk=matchCat(p);
     // 핀 요소는 처음 한 번만 찾아 저장해두고 재사용(가게가 많아도 느려지지 않게)
@@ -2512,7 +2499,6 @@ function applyFilter(){
       }
     }else nr.style.display='none';
   }
-  if(typeof cullOffscreenPins==='function') cullOffscreenPins();
   document.getElementById('count').innerHTML = q ? `"${q}" <b>${shown}곳</b>`
     : timeFilter ? `도보 ${timeFilter}분 이내 ${shown}곳 · <span style="color:var(--sub)">경계 ${dim}곳</span>`
     : `${shown}곳 · <b>US ${us}</b>`;
@@ -2743,6 +2729,7 @@ function openPanel(p){
     if(x===p) wrap.style.visibility='';
     else wrap.style.visibility='hidden';
   });
+  __pinsHiddenByPanel=true;
   if(p._onMap!==true){ p._ov.setMap(map); p._onMap=true; }
   const lineCol=p.us?'#0E8A4C':'#F25C1F';
   const path=p.route
@@ -2937,7 +2924,8 @@ function closePanel(){
   curOpen=null;
   stopRouteGlow();
   if(curLines){curLines.forEach(l=>l.setMap(null));curLines=[];}
-  P.forEach(x=>{ if(x._diamond) x._ov.getContent().style.visibility=''; }); // 감췄던 핀 복원
+  P.forEach(x=>{ if(x._ov) x._ov.getContent().style.visibility=''; }); // 감췄던 핀 복원
+  __pinsHiddenByPanel=false;
   applyFilter(); // 현재 카테고리·검색 조건 기준으로 다시 표시
   requestAnimationFrame(()=>{ setTimeout(()=>{ if(map) map.relayout(); },80); });
 }
